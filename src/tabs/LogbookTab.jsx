@@ -81,7 +81,6 @@ export default function LogbookTab() {
   const fetchTasks = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase
-      .schema('quill')
       .from('tasks')
       .select('*, projects!project_id(name)')
       .eq('status', 'done')

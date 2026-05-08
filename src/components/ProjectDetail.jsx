@@ -35,19 +35,17 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
   const fetchProjectData = useCallback(async () => {
     const [tasksRes, depsRes] = await Promise.all([
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .eq('project_id', project.id)
         .eq('status', 'open')
         .order('priority'),
       supabase
-        .schema('quill')
         .from('dependencies')
         .select('task_id, depends_on_task_id, blocker:depends_on_task_id(id, title, status, domain)')
         .in(
           'task_id',
-          (await supabase.schema('quill').from('tasks').select('id').eq('project_id', project.id)).data?.map(t => t.id) ?? []
+          (await supabase.from('tasks').select('id').eq('project_id', project.id)).data?.map(t => t.id) ?? []
         ),
     ])
 
@@ -90,7 +88,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
 
   async function handleStatusChange(newStatus) {
     setActionLoading(true)
-    const { data } = await supabase.schema('quill').from('projects').update({ status: newStatus }).eq('id', project.id).select().single()
+    const { data } = await supabase.from('projects').update({ status: newStatus }).eq('id', project.id).select().single()
     if (data) {
       setProject(data)
       onProjectUpdated?.(data)

@@ -30,14 +30,12 @@ export default function TodayTab() {
   const fetchTasks = useCallback(async () => {
     const [openRes, doneRes] = await Promise.all([
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .eq('schedule_date', today)
         .eq('status', 'open')
         .order('priority'),
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .eq('schedule_date', today)

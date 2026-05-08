@@ -6,7 +6,6 @@ export function useProjects() {
 
   useEffect(() => {
     supabase
-      .schema('quill')
       .from('projects')
       .select('id, name, domain, status')
       .eq('status', 'active')

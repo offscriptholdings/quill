@@ -42,7 +42,6 @@ export default function ThisWeekTab() {
   const fetchTasks = useCallback(async () => {
     const [weekRes, overdueRes] = await Promise.all([
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .gte('schedule_date', today)
@@ -51,7 +50,6 @@ export default function ThisWeekTab() {
         .order('schedule_date')
         .order('priority'),
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .lt('schedule_date', today)

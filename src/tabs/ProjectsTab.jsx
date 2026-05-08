@@ -33,12 +33,10 @@ export default function ProjectsTab() {
   const fetchProjects = useCallback(async () => {
     const [projRes, countRes] = await Promise.all([
       supabase
-        .schema('quill')
         .from('projects')
         .select('*')
         .order('name'),
       supabase
-        .schema('quill')
         .from('tasks')
         .select('project_id')
         .eq('status', 'open')

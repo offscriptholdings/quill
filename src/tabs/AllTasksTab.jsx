@@ -47,13 +47,11 @@ export default function AllTasksTab() {
   const fetchTasks = useCallback(async () => {
     const [tasksRes, projectsRes] = await Promise.all([
       supabase
-        .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
         .eq('status', 'open')
         .order('created_at', { ascending: false }),
       supabase
-        .schema('quill')
         .from('projects')
         .select('id, name, domain')
         .eq('status', 'active')

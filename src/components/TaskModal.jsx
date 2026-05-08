@@ -89,9 +89,9 @@ export default function TaskModal() {
 
     let result
     if (task?.id) {
-      result = await supabase.schema('quill').from('tasks').update(payload).eq('id', task.id).select().single()
+      result = await supabase.from('tasks').update(payload).eq('id', task.id).select().single()
     } else {
-      result = await supabase.schema('quill').from('tasks').insert({ ...payload, status: 'open' }).select().single()
+      result = await supabase.from('tasks').insert({ ...payload, status: 'open' }).select().single()
     }
 
     setSaving(false)

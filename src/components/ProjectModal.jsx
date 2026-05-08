@@ -53,9 +53,9 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
 
     let result
     if (project?.id) {
-      result = await supabase.schema('quill').from('projects').update(payload).eq('id', project.id).select().single()
+      result = await supabase.from('projects').update(payload).eq('id', project.id).select().single()
     } else {
-      result = await supabase.schema('quill').from('projects').insert(payload).select().single()
+      result = await supabase.from('projects').insert(payload).select().single()
     }
 
     setSaving(false)

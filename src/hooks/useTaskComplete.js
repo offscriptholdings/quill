@@ -8,7 +8,6 @@ export function useTaskComplete() {
     onOptimistic?.()
 
     const { error } = await supabase
-      .schema('quill')
       .from('tasks')
       .update({ status: 'done', completed_at: new Date().toISOString() })
       .eq('id', task.id)
@@ -24,7 +23,6 @@ export function useTaskComplete() {
       message: 'Completed',
       onUndo: async () => {
         await supabase
-          .schema('quill')
           .from('tasks')
           .update({ status: 'open', completed_at: null })
           .eq('id', task.id)
