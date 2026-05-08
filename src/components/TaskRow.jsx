@@ -17,10 +17,24 @@ const PRIORITY_DOTS = {
   low:    null,
 }
 
-export default function TaskRow({ task, onComplete, onUndo, onEdit }) {
+function formatDue(dateStr) {
+  if (!dateStr) return null
+  const today = new Date().toISOString().split('T')[0]
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  if (dateStr === today) return 'due today'
+  if (dateStr === tomorrow) return 'due tomorrow'
+  const d = new Date(dateStr + 'T00:00:00')
+  const isPast = dateStr < today
+  const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return isPast ? `overdue ${label}` : `due ${label}`
+}
+
+export default function TaskRow({ task, onComplete, onUndo, onEdit, showDomain = true, completed = false }) {
   const { completeTask } = useTaskComplete()
   const { openTaskModal } = useModal()
-  const [completing, setCompleting] = useState(false)
+  const [completing, setCompleting] = useState(completed)
+
+  const projectName = task.projects?.name ?? null
 
   function handleComplete() {
     if (completing) return
@@ -42,6 +56,8 @@ export default function TaskRow({ task, onComplete, onUndo, onEdit }) {
 
   const domainColor = DOMAIN_COLORS[task.domain] ?? '#9A9187'
   const priorityColor = PRIORITY_DOTS[task.priority]
+  const dueLabel = formatDue(task.due_date)
+  const isOverdue = task.due_date && task.due_date < new Date().toISOString().split('T')[0]
 
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border">
@@ -64,7 +80,7 @@ export default function TaskRow({ task, onComplete, onUndo, onEdit }) {
         onClick={handleEdit}
         className="flex-1 text-left min-h-[44px] flex flex-col justify-center"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
             className="font-task text-base leading-snug"
             style={{
@@ -74,29 +90,41 @@ export default function TaskRow({ task, onComplete, onUndo, onEdit }) {
           >
             {task.title}
           </span>
-          {priorityColor && (
+          {priorityColor && !completing && (
             <span
               className="inline-block rounded-full flex-shrink-0"
               style={{ width: 6, height: 6, background: priorityColor }}
             />
           )}
         </div>
-        {task.notes && (
-          <p className="font-task text-sm text-muted mt-0.5 line-clamp-1">{task.notes}</p>
-        )}
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          {projectName && (
+            <span className="font-mono text-xs text-muted">{projectName}</span>
+          )}
+          {dueLabel && !completing && (
+            <span
+              className="font-mono text-xs"
+              style={{ color: isOverdue ? '#B8848A' : '#9A9187' }}
+            >
+              {dueLabel}
+            </span>
+          )}
+        </div>
       </button>
 
-      {/* Domain chip */}
-      <span
-        className="font-mono text-xs px-2 py-0.5 rounded-full flex-shrink-0 mt-1"
-        style={{
-          color: domainColor,
-          background: domainColor + '1A',
-          border: `1px solid ${domainColor}33`,
-        }}
-      >
-        {task.domain}
-      </span>
+      {/* Domain chip — optional */}
+      {showDomain && (
+        <span
+          className="font-mono text-xs px-2 py-0.5 rounded-full flex-shrink-0 mt-1"
+          style={{
+            color: domainColor,
+            background: domainColor + '1A',
+            border: `1px solid ${domainColor}33`,
+          }}
+        >
+          {task.domain}
+        </span>
+      )}
     </div>
   )
 }
