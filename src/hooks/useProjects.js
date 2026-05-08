@@ -6,11 +6,11 @@ export function useProjects() {
 
   useEffect(() => {
     supabase
+      .schema('quill')
       .from('projects')
       .select('id, name, domain, status')
       .eq('status', 'active')
       .order('name')
-      .schema('quill')
       .then(({ data }) => {
         if (data) setProjects(data)
       })

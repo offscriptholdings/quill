@@ -1,4 +1,3 @@
-import { Component } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ModalProvider } from './context/ModalContext'
 import { ToastProvider } from './context/ToastContext'
@@ -11,24 +10,8 @@ import ProjectsTab from './tabs/ProjectsTab'
 import AllTasksTab from './tabs/AllTasksTab'
 import LogbookTab from './tabs/LogbookTab'
 
-class ErrorBoundary extends Component {
-  state = { error: null }
-  static getDerivedStateFromError(e) { return { error: e } }
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={{ padding: 24, color: '#E8E2D9', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'pre-wrap' }}>
-          {'ERROR\n\n' + this.state.error?.message + '\n\n' + this.state.error?.stack}
-        </div>
-      )
-    }
-    return this.props.children
-  }
-}
-
 export default function App() {
   return (
-    <ErrorBoundary>
     <ToastProvider>
       <ModalProvider>
         <div className="flex flex-col h-full bg-canvas">
@@ -48,6 +31,5 @@ export default function App() {
         </div>
       </ModalProvider>
     </ToastProvider>
-    </ErrorBoundary>
   )
 }
