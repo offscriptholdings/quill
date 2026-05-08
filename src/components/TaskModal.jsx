@@ -31,9 +31,9 @@ const empty = {
   rrule:         '',
 }
 
-export default function TaskModal({ onSaved }) {
+export default function TaskModal() {
   const { modalState, closeTaskModal } = useModal()
-  const { open, task } = modalState
+  const { open, task, onSaved } = modalState
   const projects = useProjects()
 
   const [form, setForm] = useState(empty)

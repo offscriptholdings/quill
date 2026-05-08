@@ -1,11 +1,11 @@
 import { useModal } from '../context/ModalContext'
 
-export default function AddTaskFAB({ defaultValues }) {
+export default function AddTaskFAB({ defaultValues, onSaved }) {
   const { openTaskModal } = useModal()
 
   return (
     <button
-      onClick={() => openTaskModal(defaultValues ?? null)}
+      onClick={() => openTaskModal(defaultValues ?? null, { onSaved })}
       className="fixed bottom-20 right-4 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95"
       style={{
         width: 52,
