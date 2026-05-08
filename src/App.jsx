@@ -8,6 +8,7 @@ import TodayTab from './tabs/TodayTab'
 import ThisWeekTab from './tabs/ThisWeekTab'
 import ProjectsTab from './tabs/ProjectsTab'
 import AllTasksTab from './tabs/AllTasksTab'
+import LogbookTab from './tabs/LogbookTab'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
               <Route path="/this-week"  element={<ThisWeekTab />} />
               <Route path="/projects"   element={<ProjectsTab />} />
               <Route path="/all-tasks"  element={<AllTasksTab />} />
+              <Route path="/logbook"    element={<LogbookTab />} />
             </Routes>
           </main>
           <NavBar />

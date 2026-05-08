@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TaskRow from '../components/TaskRow'
 import AddTaskFAB from '../components/AddTaskFAB'
@@ -127,7 +128,12 @@ export default function AllTasksTab() {
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-header text-2xl text-ink">All Tasks</h1>
-        <span className="font-mono text-xs text-muted">{filtered.length}</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs text-muted">{filtered.length}</span>
+          <Link to="/logbook" className="font-mono text-xs text-muted border border-border rounded-lg px-3 py-1.5" style={{ minHeight: 36, display: 'flex', alignItems: 'center' }}>
+            Logbook
+          </Link>
+        </div>
       </div>
 
       {/* Controls row: group toggle + sort + filter */}
