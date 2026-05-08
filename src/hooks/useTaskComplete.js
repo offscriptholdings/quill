@@ -18,6 +18,8 @@ export function useTaskComplete() {
       return
     }
 
+    fetch('https://n8n.crucibleos.io/webhook/refresh-brief', { method: 'POST' })
+
     showToast({
       message: 'Completed',
       onUndo: async () => {
