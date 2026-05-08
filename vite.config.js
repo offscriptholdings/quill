@@ -9,7 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: false, // we manage public/manifest.json ourselves
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
+        navigateFallback: null,
       },
     }),
   ],
