@@ -10,8 +10,8 @@ export default function AddTaskFAB({ defaultValues, onSaved }) {
       style={{
         width: 52,
         height: 52,
-        background: '#E8E2D9',
-        color: '#0E0D0B',
+        background: '#e36a2c',
+        color: '#E8E2D9',
         fontSize: 28,
         lineHeight: 1,
         zIndex: 40,

@@ -13,14 +13,14 @@ export default function UndoToast() {
   return (
     <div
       className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between rounded-xl px-4 py-3"
-      style={{ background: '#2A2824', border: '1px solid #3A3834' }}
+      style={{ background: '#28343d', border: '1px solid rgba(255,255,255,0.12)' }}
     >
       <span className="font-mono text-sm text-ink">{toast.message}</span>
       {toast.onUndo && (
         <button
           onClick={handleUndo}
           className="font-mono text-sm ml-4 px-3 py-1 rounded-lg"
-          style={{ color: '#C4A962', minHeight: 36, minWidth: 52 }}
+          style={{ color: '#e36a2c', minHeight: 36, minWidth: 52 }}
         >
           Undo
         </button>

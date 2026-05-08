@@ -10,8 +10,8 @@ const tabs = [
 export default function NavBar() {
   return (
     <nav
-      className="flex border-t border-border bg-canvas safe-bottom"
-      style={{ minHeight: 56 }}
+      className="flex bg-background safe-bottom"
+      style={{ minHeight: 56, borderTop: '1px solid rgba(255,255,255,0.08)' }}
     >
       {tabs.map(({ to, label }) => (
         <NavLink
@@ -21,10 +21,10 @@ export default function NavBar() {
             [
               'flex flex-1 items-center justify-center',
               'font-mono text-xs tracking-wide uppercase',
-              'transition-colors',
+              'transition-colors border-t-2',
               isActive
-                ? 'text-ink'
-                : 'text-muted',
+                ? 'text-ink border-accent'
+                : 'text-muted border-transparent',
             ].join(' ')
           }
           style={{ minHeight: 44 }}

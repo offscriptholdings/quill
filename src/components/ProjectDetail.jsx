@@ -234,7 +234,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
                       <div
                         key={b.id}
                         className="font-task text-sm text-muted pl-2 border-l-2"
-                        style={{ borderColor: '#2A2824' }}
+                        style={{ borderColor: 'rgba(255,255,255,0.08)' }}
                       >
                         {b.title}
                         {b.status === 'done' && (

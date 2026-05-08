@@ -118,7 +118,7 @@ export default function ProjectsTab() {
             className="px-3 py-1 rounded-full font-mono text-xs capitalize transition-all"
             style={{
               background: statusFilter.includes(s) ? STATUS_COLORS[s] + '33' : 'transparent',
-              border: `1px solid ${statusFilter.includes(s) ? STATUS_COLORS[s] : '#2A2824'}`,
+              border: `1px solid ${statusFilter.includes(s) ? STATUS_COLORS[s] : 'rgba(255,255,255,0.08)'}`,
               color: statusFilter.includes(s) ? STATUS_COLORS[s] : '#9A9187',
               minHeight: 32,
             }}

@@ -14,7 +14,7 @@ export default function App() {
   return (
     <ToastProvider>
       <ModalProvider>
-        <div className="flex flex-col h-full bg-canvas">
+        <div className="flex flex-col h-full bg-background">
           <main className="flex-1 overflow-y-auto">
             <Routes>
               <Route path="/"           element={<Navigate to="/today" replace />} />

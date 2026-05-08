@@ -69,7 +69,7 @@ export default function TaskRow({ task, onComplete, onUndo, onEdit, showDomain =
           width: 24,
           height: 24,
           minWidth: 24,
-          borderColor: completing ? domainColor : '#2A2824',
+          borderColor: completing ? domainColor : 'rgba(255,255,255,0.08)',
           background: completing ? domainColor + '33' : 'transparent',
         }}
         aria-label="Complete task"

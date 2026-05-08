@@ -74,7 +74,7 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
     >
       <div
         className="w-full rounded-t-2xl overflow-y-auto"
-        style={{ background: '#161513', borderTop: '1px solid #2A2824', maxHeight: '90dvh' }}
+        style={{ background: '#25313a', borderTop: '1px solid rgba(255,255,255,0.08)', maxHeight: '90dvh' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
@@ -131,7 +131,7 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
                   className="px-3 py-1.5 rounded-full font-mono text-xs transition-all"
                   style={{
                     background: form.domain === d ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                    border: `1px solid ${form.domain === d ? DOMAIN_COLORS[d] : '#2A2824'}`,
+                    border: `1px solid ${form.domain === d ? DOMAIN_COLORS[d] : 'rgba(255,255,255,0.08)'}`,
                     color: form.domain === d ? DOMAIN_COLORS[d] : '#9A9187',
                     minHeight: 36,
                   }}
@@ -152,8 +152,8 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
                   onClick={() => set('status', s)}
                   className="px-3 py-1.5 rounded-lg font-mono text-xs capitalize transition-all"
                   style={{
-                    background: form.status === s ? '#2A2824' : 'transparent',
-                    border: `1px solid ${form.status === s ? '#9A9187' : '#2A2824'}`,
+                    background: form.status === s ? '#28343d' : 'transparent',
+                    border: `1px solid ${form.status === s ? '#9A9187' : 'rgba(255,255,255,0.08)'}`,
                     color: form.status === s ? '#E8E2D9' : '#9A9187',
                     minHeight: 36,
                   }}
@@ -168,7 +168,7 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
             onClick={handleSave}
             disabled={saving}
             className="w-full py-3 rounded-xl font-mono text-sm uppercase tracking-wide"
-            style={{ background: '#E8E2D9', color: '#0E0D0B', minHeight: 52, opacity: saving ? 0.6 : 1 }}
+            style={{ background: '#e36a2c', color: '#E8E2D9', minHeight: 52, opacity: saving ? 0.6 : 1 }}
           >
             {saving ? 'Saving…' : project ? 'Save Changes' : 'Create Project'}
           </button>

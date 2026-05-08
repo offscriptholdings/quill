@@ -118,8 +118,8 @@ export default function TaskModal() {
       <div
         className="w-full rounded-t-2xl overflow-y-auto"
         style={{
-          background: '#161513',
-          borderTop: '1px solid #2A2824',
+          background: '#25313a',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
           maxHeight: '92dvh',
         }}
         onClick={e => e.stopPropagation()}
@@ -174,7 +174,7 @@ export default function TaskModal() {
                   className="px-3 py-1.5 rounded-full font-mono text-xs transition-all"
                   style={{
                     background: form.domain === d ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                    border: `1px solid ${form.domain === d ? DOMAIN_COLORS[d] : '#2A2824'}`,
+                    border: `1px solid ${form.domain === d ? DOMAIN_COLORS[d] : 'rgba(255,255,255,0.08)'}`,
                     color: form.domain === d ? DOMAIN_COLORS[d] : '#9A9187',
                     minHeight: 36,
                   }}
@@ -213,8 +213,8 @@ export default function TaskModal() {
                   onClick={() => set('priority', p)}
                   className="flex-1 py-2 rounded-lg font-mono text-xs capitalize transition-all"
                   style={{
-                    background: form.priority === p ? '#2A2824' : 'transparent',
-                    border: `1px solid ${form.priority === p ? '#9A9187' : '#2A2824'}`,
+                    background: form.priority === p ? '#28343d' : 'transparent',
+                    border: `1px solid ${form.priority === p ? '#9A9187' : 'rgba(255,255,255,0.08)'}`,
                     color: form.priority === p ? '#E8E2D9' : '#9A9187',
                     minHeight: 44,
                   }}
@@ -259,7 +259,7 @@ export default function TaskModal() {
                 style={{
                   width: 44,
                   height: 26,
-                  background: form.is_recurring ? '#C4A962' : '#2A2824',
+                  background: form.is_recurring ? '#e36a2c' : '#28343d',
                   minHeight: 44,
                 }}
                 aria-checked={form.is_recurring}
@@ -283,8 +283,8 @@ export default function TaskModal() {
                     onClick={() => set('rrule', value)}
                     className="flex-1 py-2 rounded-lg font-mono text-xs transition-all"
                     style={{
-                      background: form.rrule === value ? '#2A2824' : 'transparent',
-                      border: `1px solid ${form.rrule === value ? '#9A9187' : '#2A2824'}`,
+                      background: form.rrule === value ? '#28343d' : 'transparent',
+                      border: `1px solid ${form.rrule === value ? '#9A9187' : 'rgba(255,255,255,0.08)'}`,
                       color: form.rrule === value ? '#E8E2D9' : '#9A9187',
                       minHeight: 44,
                     }}
@@ -302,8 +302,8 @@ export default function TaskModal() {
             disabled={saving}
             className="w-full py-3 rounded-xl font-mono text-sm uppercase tracking-wide transition-opacity"
             style={{
-              background: '#E8E2D9',
-              color: '#0E0D0B',
+              background: '#e36a2c',
+              color: '#E8E2D9',
               minHeight: 52,
               opacity: saving ? 0.6 : 1,
             }}

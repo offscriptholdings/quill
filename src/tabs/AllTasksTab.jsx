@@ -149,7 +149,7 @@ export default function AllTasksTab() {
               onClick={() => setGroupBy(g)}
               className="px-3 py-1.5 font-mono text-xs capitalize transition-colors"
               style={{
-                background: groupBy === g ? '#2A2824' : 'transparent',
+                background: groupBy === g ? '#28343d' : 'transparent',
                 color: groupBy === g ? '#E8E2D9' : '#9A9187',
               }}
             >
@@ -176,7 +176,7 @@ export default function AllTasksTab() {
           className="font-mono text-xs border border-border rounded-lg px-3 py-1.5 transition-colors"
           style={{
             minHeight: 36,
-            background: activeFilterCount > 0 ? '#2A2824' : 'transparent',
+            background: activeFilterCount > 0 ? '#28343d' : 'transparent',
             color: activeFilterCount > 0 ? '#E8E2D9' : '#9A9187',
           }}
         >
@@ -197,7 +197,7 @@ export default function AllTasksTab() {
                   className="px-2.5 py-1 rounded-full font-mono text-xs transition-all"
                   style={{
                     background: filterDomains.includes(d) ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                    border: `1px solid ${filterDomains.includes(d) ? DOMAIN_COLORS[d] : '#2A2824'}`,
+                    border: `1px solid ${filterDomains.includes(d) ? DOMAIN_COLORS[d] : 'rgba(255,255,255,0.08)'}`,
                     color: filterDomains.includes(d) ? DOMAIN_COLORS[d] : '#9A9187',
                     minHeight: 32,
                   }}
@@ -216,8 +216,8 @@ export default function AllTasksTab() {
                   onClick={() => toggleFilter(filterPriorities, setFilterPriorities, p)}
                   className="px-2.5 py-1 rounded-full font-mono text-xs capitalize transition-all"
                   style={{
-                    background: filterPriorities.includes(p) ? '#2A2824' : 'transparent',
-                    border: `1px solid ${filterPriorities.includes(p) ? '#9A9187' : '#2A2824'}`,
+                    background: filterPriorities.includes(p) ? '#28343d' : 'transparent',
+                    border: `1px solid ${filterPriorities.includes(p) ? '#9A9187' : 'rgba(255,255,255,0.08)'}`,
                     color: filterPriorities.includes(p) ? '#E8E2D9' : '#9A9187',
                     minHeight: 32,
                   }}

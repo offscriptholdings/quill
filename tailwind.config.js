@@ -7,10 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink:    '#E8E2D9',
-        muted:  '#9A9187',
-        border: '#2A2824',
-        canvas: '#0E0D0B',
+        ink:        '#E8E2D9',
+        muted:      '#9A9187',
+        border:     'rgba(255,255,255,0.08)',
+        background: '#1f2a30',
+        surface:    '#25313a',
+        card:       '#28343d',
+        accent:     '#e36a2c',
         domain: {
           spirit:  '#C4A962',
           body:    '#7EA87E',

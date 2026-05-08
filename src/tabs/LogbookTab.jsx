@@ -149,7 +149,7 @@ export default function LogbookTab() {
                 onClick={() => setGroupBy(g)}
                 className="px-3 py-1.5 font-mono text-xs capitalize transition-colors"
                 style={{
-                  background: groupBy === g ? '#2A2824' : 'transparent',
+                  background: groupBy === g ? '#28343d' : 'transparent',
                   color: groupBy === g ? '#E8E2D9' : '#9A9187',
                 }}
               >
@@ -184,8 +184,8 @@ export default function LogbookTab() {
             onClick={() => setFilterDomain(null)}
             className="px-2.5 py-1 rounded-full font-mono text-xs transition-all"
             style={{
-              background: !filterDomain ? '#2A2824' : 'transparent',
-              border: `1px solid ${!filterDomain ? '#9A9187' : '#2A2824'}`,
+              background: !filterDomain ? '#28343d' : 'transparent',
+              border: `1px solid ${!filterDomain ? '#9A9187' : 'rgba(255,255,255,0.08)'}`,
               color: !filterDomain ? '#E8E2D9' : '#9A9187',
               minHeight: 32,
             }}
@@ -199,7 +199,7 @@ export default function LogbookTab() {
               className="px-2.5 py-1 rounded-full font-mono text-xs transition-all"
               style={{
                 background: filterDomain === d ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                border: `1px solid ${filterDomain === d ? DOMAIN_COLORS[d] : '#2A2824'}`,
+                border: `1px solid ${filterDomain === d ? DOMAIN_COLORS[d] : 'rgba(255,255,255,0.08)'}`,
                 color: filterDomain === d ? DOMAIN_COLORS[d] : '#9A9187',
                 minHeight: 32,
               }}
