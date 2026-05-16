@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 import TaskRow from './TaskRow'
 import ProjectModal from './ProjectModal'
+import Icon from './Icon'
 import { useModal } from '../context/ModalContext'
 
 const STATUS_COLORS = {
@@ -105,10 +106,11 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 font-mono text-xs text-muted mb-4"
+        className="flex items-center gap-2 font-mono text-xs text-ink-3 mb-4"
         style={{ minHeight: 44 }}
       >
-        ← Projects
+        <Icon name="chevron-l" size={14} />
+        <span>Projects</span>
       </button>
 
       {/* Project header */}
@@ -222,10 +224,11 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
               <div className="pl-9 mb-1">
                 <button
                   onClick={() => setExpandedDep(expandedDep === task.id ? null : task.id)}
-                  className="font-mono text-xs py-1"
+                  className="font-mono text-xs py-1 flex items-center gap-1"
                   style={{ color: '#C49A45', minHeight: 36 }}
                 >
-                  ⧗ Blocked by {blockers.length} task{blockers.length > 1 ? 's' : ''}
+                  <Icon name="lock" size={12} className="text-rubric" />
+                  <span>Blocked by {blockers.length} task{blockers.length > 1 ? 's' : ''}</span>
                 </button>
                 {expandedDep === task.id && (
                   <div className="mt-1 space-y-1 pb-2">

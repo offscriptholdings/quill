@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useModal } from '../context/ModalContext'
 import { useProjects } from '../hooks/useProjects'
 import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL, PRIORITY_VALUES, PRIORITY_DISPLAY_LABEL } from '../lib/domains'
+import Icon from './Icon'
 
 const PRIORITIES = [...PRIORITY_VALUES].reverse() // [3,2,1,0] — urgent first
 const RRULE_OPTIONS = [
@@ -131,10 +132,10 @@ export default function TaskModal() {
           </h2>
           <button
             onClick={closeTaskModal}
-            className="text-muted w-11 h-11 flex items-center justify-center text-2xl"
+            className="text-ink-3 w-11 h-11 flex items-center justify-center"
             aria-label="Close"
           >
-            ×
+            <Icon name="x" size={18} />
           </button>
         </div>
 

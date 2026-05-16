@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import Icon from './Icon'
 
 const STATUSES = ['active', 'waiting', 'complete', 'archived']
 
@@ -79,7 +80,7 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
           <h2 className="font-header text-xl text-ink">{project ? 'Edit Project' : 'New Project'}</h2>
-          <button onClick={onClose} className="text-muted w-11 h-11 flex items-center justify-center text-2xl">×</button>
+          <button onClick={onClose} className="text-ink-3 w-11 h-11 flex items-center justify-center" aria-label="Close"><Icon name="x" size={20} /></button>
         </div>
 
         <div className="px-4 py-4 space-y-4 pb-10">
