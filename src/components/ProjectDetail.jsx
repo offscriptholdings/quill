@@ -1,263 +1,277 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { DOMAIN_DISPLAY_LABEL } from '../lib/domains'
-import TaskRow from './TaskRow'
-import ProjectModal from './ProjectModal'
-import Icon from './Icon'
-import { useModal } from '../context/ModalContext'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { DOMAINS } from '../lib/domains';
+import DomainChip from './DomainChip';
+import SectionHeader from './SectionHeader';
+import TaskRow from './TaskRow';
+import Icon from './Icon';
+import AddTaskFAB from './AddTaskFAB';
 
-const STATUS_COLORS = {
-  active:   '#7EA87E',
-  waiting:  '#C49A45',
-  complete: '#6B8CAE',
-  archived: '#9A9187',
+const COLOR = {
+  ink:      '#1F1D18',
+  ink2:     '#5C5448',
+  ink3:     '#948A78',
+  linen:    '#F2EDE3',
+  paper:    '#FAF6EC',
+  rule:     '#D9CFB8',
+  ruleSoft: '#E5DCC6',
+  rubric:   '#8E3A1A',
+};
+
+const MAX_INDENT = 3;
+
+function buildTree(tasks) {
+  const byParent = new Map();
+  for (const t of tasks) {
+    const k = t.parent_id || null;
+    if (!byParent.has(k)) byParent.set(k, []);
+    byParent.get(k).push(t);
+  }
+  const result = [];
+  const seen = new Set();
+  function visit(parentId, indent) {
+    const children = byParent.get(parentId) || [];
+    for (const t of children) {
+      if (seen.has(t.id)) continue;
+      seen.add(t.id);
+      const grandchildren = byParent.get(t.id) || [];
+      result.push({ task: t, indent, hasChildren: grandchildren.length > 0 });
+      if (indent < MAX_INDENT && grandchildren.length > 0) {
+        visit(t.id, indent + 1);
+      }
+    }
+  }
+  visit(null, 0);
+  // Capture orphans whose parent_id points outside this project (treat as root)
+  for (const t of tasks) {
+    if (!seen.has(t.id)) {
+      const grandchildren = byParent.get(t.id) || [];
+      result.push({ task: t, indent: 0, hasChildren: grandchildren.length > 0 });
+      seen.add(t.id);
+    }
+  }
+  return result;
 }
 
-const DOMAIN_COLORS = {
-  spirit: '#C4A962',
-  body:   '#7EA87E',
-  work:   '#6B8CAE',
-  wealth: '#C49A45',
-  family: '#B8848A',
-}
+export default function ProjectDetail({ project, onBack, onProjectUpdated }) {
+  const [tasks, setTasks] = useState([]);
+  const [readyIds, setReadyIds] = useState(new Set());
+  const [blockedIds, setBlockedIds] = useState(new Set());
+  const [loading, setLoading] = useState(true);
 
-export default function ProjectDetail({ project: initialProject, onBack, onProjectUpdated }) {
-  const { openTaskModal } = useModal()
-
-  const [project, setProject] = useState(initialProject)
-  const [tasks, setTasks] = useState([])
-  const [deps, setDeps] = useState({})
-  const [expandedDep, setExpandedDep] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [editOpen, setEditOpen] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
-
-  const fetchProjectData = useCallback(async () => {
-    const [tasksRes, depsRes] = await Promise.all([
+  const fetchData = useCallback(async () => {
+    const [tasksRes, readyRes, blockedRes] = await Promise.all([
       supabase
         .schema('quill')
         .from('tasks')
         .select('*, projects!project_id(name)')
-        .eq('project_id', project.id)
-        .eq('status', 'open')
-        .order('priority', { ascending: false }),
+        .eq('project_id', project.id),
       supabase
         .schema('quill')
-        .from('dependencies')
-        .select('task_id, depends_on_task_id, blocker:depends_on_task_id(id, title, status, domain)')
-        .in(
-          'task_id',
-          (await supabase.schema('quill').from('tasks').select('id').eq('project_id', project.id)).data?.map(t => t.id) ?? []
-        ),
-    ])
+        .from('tasks_ready')
+        .select('id')
+        .eq('project_id', project.id),
+      supabase
+        .schema('quill')
+        .from('tasks_blocked')
+        .select('id')
+        .eq('project_id', project.id),
+    ]);
+    setTasks(tasksRes.data ?? []);
+    setReadyIds(new Set((readyRes.data ?? []).map((r) => r.id)));
+    setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
+    setLoading(false);
+  }, [project.id]);
 
-    if (tasksRes.data) {
-      setTasks(tasksRes.data.sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1)))
-    }
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-    if (depsRes.data) {
-      const depMap = {}
-      for (const d of depsRes.data) {
-        if (!depMap[d.task_id]) depMap[d.task_id] = []
-        depMap[d.task_id].push(d.blocker)
-      }
-      setDeps(depMap)
-    }
+  const counts = {
+    done:    tasks.filter((t) => t.status === 'done').length,
+    ready:   tasks.filter((t) => t.status === 'open' && readyIds.has(t.id)).length,
+    blocked: tasks.filter((t) => t.status === 'open' && blockedIds.has(t.id)).length,
+    open:    tasks.filter((t) => t.status === 'open').length,
+    total:   tasks.length,
+  };
 
-    setLoading(false)
-  }, [project.id])
-
-  useEffect(() => { fetchProjectData() }, [fetchProjectData])
-
-  function handleComplete(task) {
-    setTasks(ts => ts.filter(t => t.id !== task.id))
-  }
-
-  function handleUndo() {
-    fetchProjectData()
-  }
-
-  function handleAddTask() {
-    openTaskModal(
-      { domain: 'work', project_id: project.id },
-      { onSaved: (saved, mode) => {
-          if (mode === 'create') setTasks(ts => [...ts, saved])
-          else setTasks(ts => ts.map(t => t.id === saved.id ? { ...t, ...saved } : t))
-        }
-      }
-    )
-  }
-
-  async function handleStatusChange(newStatus) {
-    setActionLoading(true)
-    const { data } = await supabase.schema('quill').from('projects').update({ status: newStatus }).eq('id', project.id).select().single()
-    if (data) {
-      setProject(data)
-      onProjectUpdated?.(data)
-    }
-    setActionLoading(false)
-  }
-
-  const domainColor = DOMAIN_COLORS[project.domain] ?? '#9A9187'
-  const statusColor = STATUS_COLORS[project.status] ?? '#9A9187'
+  const tree = buildTree(tasks.filter((t) => t.status !== 'done'));
 
   return (
-    <div className="px-4 pt-4 pb-24">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 font-mono text-xs text-ink-3 mb-4"
-        style={{ minHeight: 44 }}
-      >
-        <Icon name="chevron-l" size={14} />
-        <span>Projects</span>
-      </button>
-
-      {/* Project header */}
-      <div className="mb-4">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h1 className="font-header text-2xl text-ink leading-tight flex-1">{project.name}</h1>
-          <button
-            onClick={() => setEditOpen(true)}
-            className="font-mono text-xs text-muted border border-border rounded-lg px-3 py-1.5 flex-shrink-0"
-            style={{ minHeight: 36 }}
-          >
-            Edit
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className="font-mono text-xs px-2 py-0.5 rounded-full"
-            style={{ color: domainColor, background: domainColor + '1A', border: `1px solid ${domainColor}33` }}
-          >
-            {DOMAIN_DISPLAY_LABEL[project.domain] ?? project.domain}
-          </span>
-          <span
-            className="font-mono text-xs px-2 py-0.5 rounded-full capitalize"
-            style={{ color: statusColor, background: statusColor + '1A', border: `1px solid ${statusColor}33` }}
-          >
-            {project.status}
-          </span>
-        </div>
-
-        {project.goal && (
-          <p className="font-task text-base text-muted italic leading-relaxed">{project.goal}</p>
-        )}
-      </div>
-
-      {/* Quick actions */}
-      {project.status !== 'complete' && project.status !== 'archived' && (
-        <div className="flex gap-2 mb-6">
-          {project.status !== 'complete' && (
-            <button
-              onClick={() => handleStatusChange('complete')}
-              disabled={actionLoading}
-              className="font-mono text-xs border border-border rounded-lg px-3 py-1.5 text-muted"
-              style={{ minHeight: 36 }}
-            >
-              Mark complete
-            </button>
-          )}
-          {project.status === 'active' && (
-            <button
-              onClick={() => handleStatusChange('waiting')}
-              disabled={actionLoading}
-              className="font-mono text-xs border border-border rounded-lg px-3 py-1.5 text-muted"
-              style={{ minHeight: 36 }}
-            >
-              Set waiting
-            </button>
-          )}
-          {project.status === 'waiting' && (
-            <button
-              onClick={() => handleStatusChange('active')}
-              disabled={actionLoading}
-              className="font-mono text-xs border border-border rounded-lg px-3 py-1.5 text-muted"
-              style={{ minHeight: 36 }}
-            >
-              Resume
-            </button>
-          )}
-          <button
-            onClick={() => handleStatusChange('archived')}
-            disabled={actionLoading}
-            className="font-mono text-xs border border-border rounded-lg px-3 py-1.5 text-muted"
-            style={{ minHeight: 36 }}
-          >
-            Archive
-          </button>
-        </div>
-      )}
-
-      {/* Task list */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
-          Tasks ({tasks.length})
-        </h2>
+    <div style={{ paddingBottom: 96 }}>
+      {/* Back nav */}
+      <div style={{ padding: '12px 16px 0' }}>
         <button
-          onClick={handleAddTask}
-          className="font-mono text-xs text-ink border border-border rounded-lg px-3 py-1.5"
-          style={{ minHeight: 36 }}
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: 0,
+            padding: 0,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: 11,
+            color: COLOR.ink3,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
         >
-          + Add task
+          <Icon name="chevron-l" size={12} sw={1.6} /> Projects
         </button>
       </div>
 
-      {loading && <p className="font-task text-muted text-base">Loading…</p>}
+      {/* Head */}
+      <div style={{ padding: '8px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <DomainChip domain={project.domain} />
+          <span style={{
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: 10,
+            color: COLOR.ink3,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}>{counts.total} TASKS</span>
+        </div>
+        <h1 style={{
+          fontFamily: 'Newsreader, serif',
+          fontSize: 26,
+          lineHeight: '30px',
+          color: COLOR.ink,
+          fontWeight: 500,
+          margin: 0,
+          letterSpacing: '-0.3px',
+        }}>{project.name}</h1>
+        {project.description && (
+          <div style={{
+            marginTop: 4,
+            fontFamily: 'Newsreader, serif',
+            fontStyle: 'italic',
+            fontSize: 14,
+            color: COLOR.ink2,
+            lineHeight: '19px',
+          }}>
+            {project.description}
+          </div>
+        )}
 
-      {!loading && tasks.length === 0 && (
-        <p className="font-task text-muted text-base">No open tasks.</p>
+        {/* 13-segment ledger */}
+        <div style={{ marginTop: 14, display: 'flex', gap: 3 }}>
+          {Array.from({ length: 13 }).map((_, i) => {
+            const filledDone    = (i / 13) < (counts.done / Math.max(counts.total, 1));
+            const filledReady   = (i / 13) < ((counts.done + counts.ready) / Math.max(counts.total, 1));
+            const filledBlocked = (i / 13) < ((counts.done + counts.ready + counts.blocked) / Math.max(counts.total, 1));
+            let bg = COLOR.ruleSoft;
+            let hatch = false;
+            if (filledDone) bg = COLOR.ink;
+            else if (filledReady) bg = COLOR.rubric;
+            else if (filledBlocked) hatch = true;
+            return (
+              <span key={i} style={{
+                flex: 1,
+                height: 8,
+                borderRadius: 1,
+                background: hatch
+                  ? `repeating-linear-gradient(45deg, ${COLOR.ruleSoft} 0 2px, transparent 2px 4px)`
+                  : bg,
+                boxShadow: hatch ? `inset 0 0 0 0.5px ${COLOR.ink3}` : 'none',
+              }} />
+            );
+          })}
+        </div>
+
+        {/* 4-stat tiles */}
+        <div style={{
+          marginTop: 12,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+        }}>
+          <StatTile label="DONE"    n={counts.done}    color={COLOR.ink} />
+          <StatTile label="READY"   n={counts.ready}   color={COLOR.rubric} />
+          <StatTile label="BLOCKED" n={counts.blocked} color={COLOR.ink2} />
+          <StatTile label="OPEN"    n={counts.open}    color={COLOR.ink} />
+        </div>
+      </div>
+
+      <SectionHeader label="Manuscript" count={tree.length} />
+
+      {loading && (
+        <div style={{
+          padding: '40px 16px',
+          textAlign: 'center',
+          fontFamily: 'Newsreader, serif',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: COLOR.ink3,
+        }}>Loading…</div>
+      )}
+      {!loading && tree.length === 0 && (
+        <div style={{
+          padding: '40px 16px',
+          textAlign: 'center',
+          fontFamily: 'Newsreader, serif',
+          fontStyle: 'italic',
+          fontSize: 16,
+          color: COLOR.ink3,
+        }}>
+          No open tasks in this project.
+        </div>
+      )}
+      {tree.length > 0 && (
+        <div style={{
+          background: COLOR.paper,
+          margin: '0 16px',
+          borderRadius: 3,
+          boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
+        }}>
+          {tree.map(({ task, indent, hasChildren }, i) => (
+            <TaskRow
+              key={task.id}
+              task={{ ...task, domain: project.domain }}
+              showDomain={false}
+              indent={indent}
+              hasChildren={hasChildren}
+              noRule={i === tree.length - 1}
+              onComplete={() => { fetchData(); onProjectUpdated?.(); }}
+              onUndo={() => { fetchData(); onProjectUpdated?.(); }}
+            />
+          ))}
+        </div>
       )}
 
-      {tasks.map(task => {
-        const blockers = deps[task.id]
-        return (
-          <div key={task.id}>
-            <TaskRow
-              task={task}
-              showDomain={false}
-              onComplete={handleComplete}
-              onUndo={handleUndo}
-            />
-            {blockers?.length > 0 && (
-              <div className="pl-9 mb-1">
-                <button
-                  onClick={() => setExpandedDep(expandedDep === task.id ? null : task.id)}
-                  className="font-mono text-xs py-1 flex items-center gap-1"
-                  style={{ color: '#C49A45', minHeight: 36 }}
-                >
-                  <Icon name="lock" size={12} className="text-rubric" />
-                  <span>Blocked by {blockers.length} task{blockers.length > 1 ? 's' : ''}</span>
-                </button>
-                {expandedDep === task.id && (
-                  <div className="mt-1 space-y-1 pb-2">
-                    {blockers.map(b => b && (
-                      <div
-                        key={b.id}
-                        className="font-task text-sm text-muted pl-2 border-l-2"
-                        style={{ borderColor: '#2A2824' }}
-                      >
-                        {b.title}
-                        {b.status === 'done' && (
-                          <span className="font-mono text-xs ml-2" style={{ color: '#7EA87E' }}>done</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      <ProjectModal
-        open={editOpen}
-        project={project}
-        onClose={() => setEditOpen(false)}
-        onSaved={(updated) => { setProject(updated); onProjectUpdated?.(updated) }}
+      <AddTaskFAB
+        defaultValues={{ project_id: project.id, domain: project.domain }}
+        onSaved={() => { fetchData(); onProjectUpdated?.(); }}
       />
     </div>
-  )
+  );
+}
+
+function StatTile({ label, n, color }) {
+  return (
+    <div style={{
+      background: COLOR.paper,
+      borderRadius: 3,
+      boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
+      padding: '8px 10px',
+      textAlign: 'left',
+    }}>
+      <div style={{
+        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+        fontSize: 10,
+        color: COLOR.ink3,
+        letterSpacing: '0.06em',
+        fontWeight: 600,
+      }}>{label}</div>
+      <div style={{
+        fontFamily: 'Newsreader, serif',
+        fontSize: 22,
+        lineHeight: '26px',
+        color,
+        fontWeight: 500,
+      }}>{n}</div>
+    </div>
+  );
 }
