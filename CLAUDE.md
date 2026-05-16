@@ -19,19 +19,46 @@ personal operating system stack. Mobile-first, iPhone primary surface.
 - Env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 
 ## Design system
-- Background: #0E0D0B
-- Ink (primary text): #E8E2D9
-- Muted text: #9A9187
-- Border: #2A2824
-- Headers: Playfair Display
-- Task text: Crimson Pro
-- Labels/meta: JetBrains Mono
-- Domain colors (muted):
-  - Spirit: #C4A962
-  - Body: #7EA87E
-  - Project: #6B8CAE
-  - Wealth: #C49A45
-  - Family: #B8848A
+
+**Surfaces:**
+- linen `#F2EDE3` — page background
+- linen-2 `#EAE2CE` — alt fill, sticky headers
+- paper `#FAF6EC` — card / sheet
+- paper-2 `#F6F0DF` — raised card hover
+- rule `#D9CFB8` — ledger / divider hairline
+- rule-soft `#E5DCC6` — faint rule
+
+**Ink scale:**
+- ink `#1F1D18` — primary text, primary buttons
+- ink-2 `#5C5448` — secondary text
+- ink-3 `#948A78` — tertiary, placeholder, mono captions
+- ink-4 `#BFB6A0` — disabled
+
+**Accents (use sparingly):**
+- rubric `#8E3A1A` — oxblood, today marks, key actions
+- rubric-2 `#C26B4A` — softer rubric
+- gold `#B8893A` — tiny sister-of-Crucible accent
+
+**Domain palette (earth pigments — each with color/tint/edge):**
+
+| Domain | color | tint | edge |
+|---|---|---|---|
+| Spirit | `#4A5578` | `#E6E5EC` | `#C9C8D6` |
+| Body   | `#5F6E3C` | `#E8EADD` | `#CBD0B4` |
+| Work   | `#8B5A3C` | `#EFE4D7` | `#D9C4AD` |
+| Wealth | `#A57E2A` | `#F0E8D2` | `#DBC994` |
+| Family | `#6E3F4A` | `#EDE0E2` | `#D2B9BE` |
+
+`DOMAIN_ORDER = ['spirit','body','work','wealth','family']` — invariant.
+
+**Fonts:**
+- Headings: Newsreader (Google) — display titles, view headers, task titles. Weight 450–500.
+- Body / UI: IBM Plex Sans
+- Mono: IBM Plex Mono — metadata, dates, mono-caption kickers (uppercase + letter-spacing 0.6–0.8)
+
+**Radius:** `paper: 3px`, `pill: 15px`, `sheet: 18px`
+
+**Source of truth:** `design/quill-system.jsx` (`Q` token object), `design/HANDOFF.md`.
 
 ## Domain values
 Spirit, Body, Project, Wealth, Family
