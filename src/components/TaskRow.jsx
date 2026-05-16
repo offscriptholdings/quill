@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 import { DOMAINS } from '../lib/domains';
 import { useTaskState } from '../hooks/useTaskState';
 import { useTaskComplete } from '../hooks/useTaskComplete';
-import { useModal } from '../context/ModalContext';
 import TaskCheck from './TaskCheck';
 import PriorityMark from './PriorityMark';
 import Icon from './Icon';
@@ -48,7 +48,7 @@ export default function TaskRow({
 }) {
   const { state: derivedState } = useTaskState(task);
   const { completeTask } = useTaskComplete();
-  const { openTaskModal } = useModal();
+  const navigate = useNavigate();
   const [completing, setCompleting] = useState(completed || derivedState === 'done');
   const [revealLeft, setRevealLeft] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
@@ -76,8 +76,8 @@ export default function TaskRow({
   const handleEdit = useCallback(() => {
     setRevealLeft(false);
     if (onEdit) onEdit(task);
-    else openTaskModal(task);
-  }, [task, onEdit, openTaskModal]);
+    else navigate('/task/' + task.id);
+  }, [task, onEdit, navigate]);
 
   const handleSnooze = useCallback(() => {
     setRevealLeft(false);
