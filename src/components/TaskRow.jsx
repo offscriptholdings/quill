@@ -1,132 +1,281 @@
-import { useState } from 'react'
-import { useTaskComplete } from '../hooks/useTaskComplete'
-import { useModal } from '../context/ModalContext'
-import { DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import { useState, useCallback, useRef } from 'react';
+import { useSwipeable } from 'react-swipeable';
+import { DOMAINS } from '../lib/domains';
+import { useTaskState } from '../hooks/useTaskState';
+import { useTaskComplete } from '../hooks/useTaskComplete';
+import { useModal } from '../context/ModalContext';
+import TaskCheck from './TaskCheck';
+import PriorityMark from './PriorityMark';
+import Icon from './Icon';
 
-const DOMAIN_COLORS = {
-  spirit: '#C4A962',
-  body:   '#7EA87E',
-  work:   '#6B8CAE',
-  wealth: '#C49A45',
-  family: '#B8848A',
-}
-
-// priority is int 0–3: 3=urgent, 2=high, 1=normal, 0=low
-const PRIORITY_DOTS = {
-  3: '#B8848A',
-  2: '#C49A45',
-  1: null,
-  0: null,
-}
+const COLOR = {
+  ink:       '#1F1D18',
+  ink2:      '#5C5448',
+  ink3:      '#948A78',
+  linen:     '#F2EDE3',
+  rule:      '#D9CFB8',
+  ruleSoft:  '#E5DCC6',
+  rubric:    '#8E3A1A',
+};
 
 function formatDue(dateStr) {
-  if (!dateStr) return null
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  if (dateStr === today) return 'due today'
-  if (dateStr === tomorrow) return 'due tomorrow'
-  const d = new Date(dateStr + 'T00:00:00')
-  const isPast = dateStr < today
-  const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  return isPast ? `overdue ${label}` : `due ${label}`
+  if (!dateStr) return null;
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  if (dateStr === today) return 'due today';
+  if (dateStr === tomorrow) return 'due tomorrow';
+  const isPast = dateStr < today;
+  const d = new Date(dateStr + 'T00:00:00');
+  const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return isPast ? 'overdue' : `due ${label}`;
 }
 
-export default function TaskRow({ task, onComplete, onUndo, onEdit, showDomain = true, completed = false }) {
-  const { completeTask } = useTaskComplete()
-  const { openTaskModal } = useModal()
-  const [completing, setCompleting] = useState(completed)
+/**
+ * Task row — 56px min-height, domain left-rule, mono meta, swipe to complete / reveal.
+ * Consumer API preserved: pass `task` + callbacks.
+ */
+export default function TaskRow({
+  task,
+  onComplete, onUndo, onEdit,
+  showDomain = true,
+  completed = false,
+  indent = 0,
+  hasChildren = false,
+  expanded = true,
+  noRule = false,
+  today: todayProp,
+  onSnooze, onDelete, onLongPress,
+}) {
+  const { state: derivedState } = useTaskState(task);
+  const { completeTask } = useTaskComplete();
+  const { openTaskModal } = useModal();
+  const [completing, setCompleting] = useState(completed || derivedState === 'done');
+  const [revealLeft, setRevealLeft] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const longPressTimer = useRef(null);
 
-  const projectName = task.projects?.name ?? null
+  const state = completing ? 'done' : derivedState;
+  const dim = state === 'done';
+  const d = DOMAINS[task?.domain];
 
-  function handleComplete() {
-    if (completing) return
-    setCompleting(true)
+  const todayIso = new Date().toISOString().split('T')[0];
+  const today = todayProp ?? (task?.schedule_date === todayIso);
+
+  const handleComplete = useCallback(() => {
+    if (!task?.id || completing) return;
+    setCompleting(true);
+    setRevealLeft(false);
+    if (navigator.vibrate) navigator.vibrate(50);
     completeTask(task, {
       onOptimistic: () => onComplete?.(task),
       onRevert: () => setCompleting(false),
       onUndo: () => onUndo?.(task),
-    })
-  }
+    });
+  }, [task, completing, completeTask, onComplete, onUndo]);
 
-  function handleEdit() {
-    if (onEdit) {
-      onEdit(task)
-    } else {
-      openTaskModal(task)
+  const handleEdit = useCallback(() => {
+    setRevealLeft(false);
+    if (onEdit) onEdit(task);
+    else openTaskModal(task);
+  }, [task, onEdit, openTaskModal]);
+
+  const handleSnooze = useCallback(() => {
+    setRevealLeft(false);
+    onSnooze?.(task);
+  }, [task, onSnooze]);
+
+  const handleDelete = useCallback(() => {
+    setRevealLeft(false);
+    onDelete?.(task);
+  }, [task, onDelete]);
+
+  const startLongPress = useCallback(() => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setBulkMode(true);
+      if (navigator.vibrate) navigator.vibrate(20);
+      onLongPress?.(task);
+    }, 500);
+  }, [task, onLongPress]);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-  }
+  }, []);
 
-  const domainColor = DOMAIN_COLORS[task.domain] ?? '#9A9187'
-  const priorityColor = PRIORITY_DOTS[task.priority]
-  const dueLabel = formatDue(task.due_date)
-  const isOverdue = task.due_date && task.due_date < new Date().toISOString().split('T')[0]
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: (e) => { if (e.absX > 88) handleComplete(); },
+    onSwipedLeft:  (e) => { if (e.absX > 88) setRevealLeft(true); },
+    onTap: () => { if (revealLeft) setRevealLeft(false); },
+    trackTouch: true,
+    trackMouse: false,
+    preventScrollOnSwipe: true,
+    delta: 10,
+  });
+
+  if (!task) return null;
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-border">
-      {/* Completion circle */}
-      <button
-        onClick={handleComplete}
-        className="flex-shrink-0 rounded-full border-2 transition-colors mt-0.5"
-        style={{
-          width: 24,
-          height: 24,
-          minWidth: 24,
-          borderColor: completing ? domainColor : '#2A2824',
-          background: completing ? domainColor + '33' : 'transparent',
-        }}
-        aria-label="Complete task"
-      />
+    <div
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'transparent',
+      }}
+      {...swipeHandlers}
+      onMouseDown={startLongPress}
+      onTouchStart={(e) => { startLongPress(); swipeHandlers.onTouchStart?.(e); }}
+      onMouseUp={cancelLongPress}
+      onTouchEnd={(e) => { cancelLongPress(); swipeHandlers.onTouchEnd?.(e); }}
+      onMouseLeave={cancelLongPress}
+    >
+      {revealLeft && (
+        <div style={{
+          position: 'absolute', right: 0, top: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px',
+          background: COLOR.linen, zIndex: 1,
+        }}>
+          <button onClick={handleSnooze} style={pillStyle(COLOR.ink2)}>Snooze</button>
+          <button onClick={handleEdit}   style={pillStyle(COLOR.ink)}>Edit</button>
+          <button onClick={handleDelete} style={pillStyle(COLOR.rubric)}>Delete</button>
+        </div>
+      )}
 
-      {/* Task content */}
-      <button
-        onClick={handleEdit}
-        className="flex-1 text-left min-h-[44px] flex flex-col justify-center"
-      >
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className="font-task text-base leading-snug"
-            style={{
-              color: completing ? '#9A9187' : '#E8E2D9',
-              textDecoration: completing ? 'line-through' : 'none',
-            }}
-          >
-            {task.title}
-          </span>
-          {priorityColor && !completing && (
-            <span
-              className="inline-block rounded-full flex-shrink-0"
-              style={{ width: 6, height: 6, background: priorityColor }}
-            />
+      <div style={{
+        position: 'relative',
+        display: 'flex', alignItems: 'flex-start', gap: 12,
+        padding: `10px 16px 10px ${16 + indent * 18}px`,
+        minHeight: 56, boxSizing: 'border-box',
+        borderBottom: noRule ? 'none' : `0.5px solid ${COLOR.ruleSoft}`,
+        background: COLOR.linen,
+        transform: revealLeft ? 'translateX(-200px)' : 'translateX(0)',
+        transition: 'transform 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+        opacity: dim ? 0.6 : 1,
+      }}>
+        {d && (
+          <span style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: 2, background: d.color,
+          }} />
+        )}
+        {today && !d && (
+          <span style={{
+            position: 'absolute', left: 4, top: 14, bottom: 14,
+            width: 2, background: COLOR.rubric, borderRadius: 1,
+          }} />
+        )}
+        {indent > 0 && (
+          <span style={{
+            position: 'absolute',
+            left: 16 + (indent - 1) * 18 + 11, top: 0, height: 22,
+            width: 1, background: COLOR.rule,
+          }} />
+        )}
+        {indent > 0 && (
+          <span style={{
+            position: 'absolute',
+            left: 16 + (indent - 1) * 18 + 11, top: 22,
+            width: 10, height: 1, background: COLOR.rule,
+          }} />
+        )}
+        {bulkMode && (
+          <span style={{
+            position: 'absolute', left: 2, top: '50%', transform: 'translateY(-50%)',
+            width: 18, height: 18, borderRadius: 9,
+            border: `2px solid ${COLOR.rubric}`,
+          }} />
+        )}
+        <div style={{ paddingTop: 4, position: 'relative' }}>
+          <TaskCheck state={state} size={22} onPress={handleComplete} />
+          {hasChildren && (
+            <span style={{
+              position: 'absolute', left: -2, top: -2,
+              width: 26, height: 26, borderRadius: 13,
+              border: `1px dashed ${COLOR.ink3}`, opacity: 0.5, pointerEvents: 'none',
+            }} />
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          {projectName && (
-            <span className="font-mono text-xs text-muted">{projectName}</span>
-          )}
-          {dueLabel && !completing && (
-            <span
-              className="font-mono text-xs"
-              style={{ color: isOverdue ? '#B8848A' : '#9A9187' }}
-            >
-              {dueLabel}
-            </span>
-          )}
-        </div>
-      </button>
-
-      {/* Domain chip — optional */}
-      {showDomain && (
-        <span
-          className="font-mono text-xs px-2 py-0.5 rounded-full flex-shrink-0 mt-1"
+        <button
+          onClick={handleEdit}
           style={{
-            color: domainColor,
-            background: domainColor + '1A',
-            border: `1px solid ${domainColor}33`,
+            flex: 1, minWidth: 0, textAlign: 'left',
+            background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
           }}
         >
-          {DOMAIN_DISPLAY_LABEL[task.domain] ?? task.domain}
+          <div style={{
+            fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+            fontSize: 15, lineHeight: '20px',
+            color: dim ? COLOR.ink3 : COLOR.ink, fontWeight: 450,
+            textDecoration: dim ? 'line-through' : 'none',
+            textDecorationColor: COLOR.ink3,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{task.title}</div>
+          <MetaLine
+            d={d}
+            showDomain={showDomain}
+            project={task.projects?.name}
+            due={formatDue(task.due_date)}
+            blockedBy={null}
+            unblocks={null}
+          />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6 }}>
+          <PriorityMark priority={task.priority ?? 0} />
+          {hasChildren && (
+            <Icon name="chevron-d" size={12} sw={1.4} style={{ color: COLOR.ink3, transform: expanded ? 'none' : 'rotate(-90deg)' }} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetaLine({ d, showDomain, project, due, blockedBy, unblocks }) {
+  if (!d && !project && !due && !blockedBy && !unblocks) return null;
+  return (
+    <div style={{
+      marginTop: 3, display: 'flex', alignItems: 'center', gap: 8,
+      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+      fontSize: 10, color: COLOR.ink2, lineHeight: '14px',
+      fontVariantNumeric: 'tabular-nums', fontWeight: 600,
+      letterSpacing: '0.06em', textTransform: 'uppercase',
+    }}>
+      {showDomain && d && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: d.color }}>
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: d.color }} />
+          <span>{d.label}</span>
+        </span>
+      )}
+      {project && d && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {project && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120, textTransform: 'none', letterSpacing: 0, fontWeight: 450 }}>{project}</span>}
+      {due && (project || d) && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {due && <span style={{ color: due === 'overdue' ? COLOR.rubric : COLOR.ink2 }}>{due}</span>}
+      {blockedBy && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {blockedBy && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: COLOR.ink3 }}>
+          <Icon name="lock" size={10} sw={1.4} />
+          <span>waiting on {blockedBy}</span>
+        </span>
+      )}
+      {unblocks && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {unblocks && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: COLOR.ink2 }}>
+          <Icon name="arrow-r" size={10} sw={1.4} />
+          <span>unblocks {unblocks}</span>
         </span>
       )}
     </div>
-  )
+  );
+}
+
+function pillStyle(color) {
+  return {
+    background: color, color: COLOR.linen,
+    border: 0, borderRadius: 15, padding: '6px 14px',
+    fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+    fontSize: 12, fontWeight: 600,
+    cursor: 'pointer',
+  };
 }
