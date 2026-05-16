@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { DOMAINS } from '../lib/domains'
 import DomainGlyph from './DomainGlyph'
 
@@ -5,18 +6,19 @@ import DomainGlyph from './DomainGlyph'
  * Pill chip — for filter rows and view headers.
  *
  * @param {'spirit'|'body'|'work'|'wealth'|'family'} domain
- * @param {function} [onPress] - Tap handler. Renders as <button> if provided, else <span>.
+ * @param {function} [onPress] - Tap handler. Defaults to navigating to /domain/<key>.
  * @param {boolean} [active] - Visual active state (slightly stronger border + color)
  * @param {string} [className]
  */
 export default function DomainChip({ domain, onPress, active = false, className = '', style }) {
+  const navigate = useNavigate()
   const d = DOMAINS[domain]
   if (!d) return null
-  const Component = onPress ? 'button' : 'span'
-  const baseProps = onPress ? { onClick: onPress, type: 'button' } : {}
+  const handlePress = onPress || (() => navigate('/domain/' + domain))
   return (
-    <Component
-      {...baseProps}
+    <button
+      type="button"
+      onClick={handlePress}
       className={className}
       style={{
         display: 'inline-flex',
@@ -32,13 +34,13 @@ export default function DomainChip({ domain, onPress, active = false, className 
         fontWeight: 600,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        cursor: onPress ? 'pointer' : 'default',
-        opacity: active === false && onPress ? 0.85 : 1,
+        cursor: 'pointer',
+        opacity: active === false ? 0.85 : 1,
         ...style,
       }}
     >
       <DomainGlyph domain={domain} size={11} strokeWidth={1.4} />
       {d.label}
-    </Component>
+    </button>
   )
 }

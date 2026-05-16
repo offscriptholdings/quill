@@ -10,6 +10,7 @@ import ProjectsTab from './tabs/ProjectsTab';
 import SomedayTab from './tabs/SomedayTab';
 import MenuTab from './tabs/MenuTab';
 import LogbookTab from './tabs/LogbookTab';
+import DomainScreen from './tabs/DomainScreen';
 
 function formatDate(d) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/someday"        element={<SomedayTab />} />
               <Route path="/menu"           element={<MenuTab />} />
               <Route path="/menu/logbook"   element={<LogbookTab />} />
+              <Route path="/domain/:slug"   element={<DomainScreen />} />
               {/* Redirects from old routes */}
               <Route path="/this-week"      element={<Navigate to="/today" replace />} />
               <Route path="/all-tasks"      element={<Navigate to="/someday" replace />} />
