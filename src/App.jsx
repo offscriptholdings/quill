@@ -3,7 +3,7 @@ import { ModalProvider } from './context/ModalContext';
 import { ToastProvider } from './context/ToastContext';
 import AppTopBar from './components/AppTopBar';
 import TabBar from './components/TabBar';
-import TaskModal from './components/TaskModal';
+import CaptureSheet from './components/CaptureSheet';
 import UndoToast from './components/UndoToast';
 import TodayTab from './tabs/TodayTab';
 import ProjectsTab from './tabs/ProjectsTab';
@@ -51,7 +51,7 @@ export default function App() {
             </Routes>
           </main>
           <TabBar />
-          <TaskModal />
+          <CaptureSheet />
           <UndoToast />
         </div>
       </ModalProvider>
