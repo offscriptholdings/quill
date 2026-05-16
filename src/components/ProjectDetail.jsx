@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 import TaskRow from './TaskRow'
 import ProjectModal from './ProjectModal'
 import { useModal } from '../context/ModalContext'
-
-const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 }
 
 const STATUS_COLORS = {
   active:   '#7EA87E',
@@ -14,11 +13,11 @@ const STATUS_COLORS = {
 }
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
 export default function ProjectDetail({ project: initialProject, onBack, onProjectUpdated }) {
@@ -40,7 +39,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
         .select('*, projects!project_id(name)')
         .eq('project_id', project.id)
         .eq('status', 'open')
-        .order('priority'),
+        .order('priority', { ascending: false }),
       supabase
         .schema('quill')
         .from('dependencies')
@@ -52,7 +51,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
     ])
 
     if (tasksRes.data) {
-      setTasks(tasksRes.data.sort((a, b) => (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2)))
+      setTasks(tasksRes.data.sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1)))
     }
 
     if (depsRes.data) {
@@ -79,7 +78,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
 
   function handleAddTask() {
     openTaskModal(
-      { domain: 'Project', project_id: project.id },
+      { domain: 'work', project_id: project.id },
       { onSaved: (saved, mode) => {
           if (mode === 'create') setTasks(ts => [...ts, saved])
           else setTasks(ts => ts.map(t => t.id === saved.id ? { ...t, ...saved } : t))
@@ -130,7 +129,7 @@ export default function ProjectDetail({ project: initialProject, onBack, onProje
             className="font-mono text-xs px-2 py-0.5 rounded-full"
             style={{ color: domainColor, background: domainColor + '1A', border: `1px solid ${domainColor}33` }}
           >
-            {project.domain}
+            {DOMAIN_DISPLAY_LABEL[project.domain] ?? project.domain}
           </span>
           <span
             className="font-mono text-xs px-2 py-0.5 rounded-full capitalize"

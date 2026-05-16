@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-
-const DOMAIN_ORDER = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
+import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
 function addDays(isoDate, n) {
@@ -52,7 +51,7 @@ function CompletedTaskRow({ task }) {
             className="font-mono text-xs px-1.5 py-0.5 rounded-full"
             style={{ color: domainColor, background: domainColor + '1A' }}
           >
-            {task.domain}
+            {DOMAIN_DISPLAY_LABEL[task.domain] ?? task.domain}
           </span>
           {task.notes && (
             <span className="font-mono text-xs text-muted">{expanded ? '▾' : '▸'}</span>
@@ -204,7 +203,7 @@ export default function LogbookTab() {
                 minHeight: 32,
               }}
             >
-              {d}
+              {DOMAIN_DISPLAY_LABEL[d] ?? d}
             </button>
           ))}
         </div>
@@ -235,7 +234,7 @@ export default function LogbookTab() {
               className="font-mono text-xs uppercase tracking-widest"
               style={{ color: DOMAIN_COLORS[domain] }}
             >
-              {domain}
+              {DOMAIN_DISPLAY_LABEL[domain] ?? domain}
             </h2>
             <span className="font-mono text-xs text-muted">{domainTasks.length}</span>
           </div>
