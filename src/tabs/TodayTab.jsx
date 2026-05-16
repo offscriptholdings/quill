@@ -1,149 +1,170 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
-import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
-import TaskRow from '../components/TaskRow'
-import AddTaskFAB from '../components/AddTaskFAB'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { DOMAIN_ORDER, DOMAINS } from '../lib/domains';
+import ViewHeader from '../components/ViewHeader';
+import SectionHeader from '../components/SectionHeader';
+import TaskRow from '../components/TaskRow';
+import AddTaskFAB from '../components/AddTaskFAB';
 
-function groupByDomain(tasks) {
-  const groups = {}
-  for (const t of tasks) {
-    if (!groups[t.domain]) groups[t.domain] = []
-    groups[t.domain].push(t)
-  }
-  for (const d of Object.keys(groups)) {
-    groups[d].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1))
-  }
-  return groups
+const COLOR = {
+  ink: '#1F1D18', ink2: '#5C5448', ink3: '#948A78',
+  paper: '#FAF6EC', rule: '#D9CFB8', rubric: '#8E3A1A',
+};
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function ordinalWord(n) {
+  const words = {
+    1: 'FIRST', 2: 'SECOND', 3: 'THIRD', 4: 'FOURTH', 5: 'FIFTH', 6: 'SIXTH',
+    7: 'SEVENTH', 8: 'EIGHTH', 9: 'NINTH', 10: 'TENTH', 11: 'ELEVENTH',
+    12: 'TWELFTH', 13: 'THIRTEENTH', 14: 'FOURTEENTH', 15: 'FIFTEENTH',
+    16: 'SIXTEENTH', 17: 'SEVENTEENTH', 18: 'EIGHTEENTH', 19: 'NINETEENTH',
+    20: 'TWENTIETH', 21: 'TWENTY-FIRST', 22: 'TWENTY-SECOND', 23: 'TWENTY-THIRD',
+    24: 'TWENTY-FOURTH', 25: 'TWENTY-FIFTH', 26: 'TWENTY-SIXTH', 27: 'TWENTY-SEVENTH',
+    28: 'TWENTY-EIGHTH', 29: 'TWENTY-NINTH', 30: 'THIRTIETH', 31: 'THIRTY-FIRST',
+  };
+  return words[n] ?? ordinal(n).toUpperCase();
+}
+
+function formatKicker(d) {
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+  const dayWord = ordinalWord(d.getDate());
+  return `${weekday} · THE ${dayWord}`;
 }
 
 export default function TodayTab() {
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  const [openTasks, setOpenTasks] = useState([]);
+  const [blockedIds, setBlockedIds] = useState(new Set());
+  const [doneCount, setDoneCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const [tasks, setTasks] = useState([])
-  const [completedToday, setCompletedToday] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCompleted, setShowCompleted] = useState(false)
+  const fetchAll = useCallback(async () => {
+    const todayIso = new Date().toISOString().split('T')[0];
+    const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-  const fetchTasks = useCallback(async () => {
-    const [openRes, doneRes] = await Promise.all([
-      supabase
-        .schema('quill')
-        .from('tasks')
-        .select('*, projects!project_id(name)')
-        .eq('schedule_date', today)
-        .eq('status', 'open')
-        .order('priority', { ascending: false }),
-      supabase
-        .schema('quill')
-        .from('tasks')
-        .select('*, projects!project_id(name)')
-        .eq('schedule_date', today)
+    const [openRes, blockedRes, doneRes] = await Promise.all([
+      supabase.schema('quill').from('tasks_today').select('*, projects!project_id(name)'),
+      supabase.schema('quill').from('tasks_blocked').select('id'),
+      supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
         .eq('status', 'done')
-        .gte('completed_at', today)
-        .lt('completed_at', tomorrow)
-        .order('completed_at', { ascending: false }),
-    ])
-    if (openRes.data) setTasks(openRes.data)
-    if (doneRes.data) setCompletedToday(doneRes.data)
-    setLoading(false)
-  }, [today, tomorrow])
+        .gte('completed_at', todayIso)
+        .lt('completed_at', tomorrowIso),
+    ]);
 
-  useEffect(() => { fetchTasks() }, [fetchTasks])
+    if (openRes.data) setOpenTasks(openRes.data);
+    setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
+    setDoneCount(doneRes.count ?? 0);
+    setLoading(false);
+  }, []);
 
-  function handleComplete(task) {
-    setTasks(ts => ts.filter(t => t.id !== task.id))
-    setCompletedToday(ts => [{ ...task, status: 'done', completed_at: new Date().toISOString() }, ...ts])
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleComplete = useCallback((task) => {
+    setOpenTasks((ts) => ts.filter((t) => t.id !== task.id));
+    setDoneCount((n) => n + 1);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const groups = {};
+  for (const t of openTasks) {
+    if (!groups[t.domain]) groups[t.domain] = [];
+    groups[t.domain].push(t);
   }
-
-  function handleUndo(task) {
-    setCompletedToday(ts => ts.filter(t => t.id !== task.id))
-    fetchTasks()
+  for (const k of Object.keys(groups)) {
+    groups[k].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1));
   }
+  const orderedDomains = DOMAIN_ORDER.filter((d) => groups[d]?.length > 0);
 
-  function handleSaved(saved, mode) {
-    if (mode === 'create' && saved.schedule_date === today) {
-      setTasks(ts => [...ts, saved])
-    } else if (mode === 'update') {
-      setTasks(ts => ts.map(t => t.id === saved.id ? { ...t, ...saved } : t))
-    }
-  }
+  const openTotal = openTasks.length;
+  const blockedTotal = openTasks.filter((t) => blockedIds.has(t.id)).length;
 
-  const groups = groupByDomain(tasks)
-  const orderedDomains = DOMAIN_ORDER.filter(d => groups[d]?.length > 0)
-  const openCount = tasks.length
-  const doneCount = completedToday.length
-  const totalCount = openCount + doneCount
-
-  const dateLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric',
-  })
+  const now = new Date();
+  const kicker = formatKicker(now);
 
   return (
-    <div className="px-4 pt-6 pb-24">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-1">
-        <h1 className="font-header text-2xl text-ink">Today</h1>
-        {totalCount > 0 && (
-          <span className="font-mono text-xs text-muted mt-1.5">
-            {doneCount}/{totalCount}
-          </span>
-        )}
+    <div style={{ minHeight: '100%', background: '#F2EDE3' }}>
+      <ViewHeader
+        kicker={kicker}
+        title="Today"
+        dropCap="T"
+        count={openTotal}
+      />
+
+      <div style={{
+        margin: '0 16px 14px', padding: '8px 12px',
+        background: COLOR.paper, borderRadius: 3,
+        boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
+        display: 'flex', alignItems: 'center', gap: 14,
+        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+        fontSize: 11, color: COLOR.ink2, fontVariantNumeric: 'tabular-nums',
+      }}>
+        <TallyItem dotColor={COLOR.rubric} count={openTotal} label="open" />
+        <TallyItem dotColor={COLOR.ink3}   count={blockedTotal} label="blocked" />
+        <TallyItem dotColor={COLOR.ink}    count={doneCount} label="done" />
+        <span style={{ flex: 1 }} />
+        <span style={{ color: COLOR.ink3 }}>by domain</span>
       </div>
-      <p className="font-mono text-xs text-muted mb-6">{dateLabel}</p>
 
       {loading && (
-        <p className="font-task text-muted text-base">Loading…</p>
-      )}
-
-      {!loading && totalCount === 0 && (
-        <p className="font-task text-muted text-base">Nothing scheduled for today.</p>
-      )}
-
-      {/* Open tasks grouped by domain */}
-      {orderedDomains.map(domain => (
-        <div key={domain} className="mb-6">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-muted mb-1">{DOMAIN_DISPLAY_LABEL[domain] ?? domain}</h2>
-          {groups[domain].map(task => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              showDomain={false}
-              onComplete={handleComplete}
-              onUndo={handleUndo}
-            />
-          ))}
+        <div style={{
+          padding: '40px 16px', textAlign: 'center',
+          fontFamily: 'Newsreader, serif', fontSize: 16, fontStyle: 'italic',
+          color: COLOR.ink3,
+        }}>
+          Loading…
         </div>
-      ))}
+      )}
 
-      {/* Completed today (collapsible) */}
-      {doneCount > 0 && (
-        <div className="mt-4">
-          <button
-            onClick={() => setShowCompleted(v => !v)}
-            className="flex items-center gap-2 font-mono text-xs text-muted uppercase tracking-widest w-full text-left py-2"
-            style={{ minHeight: 44 }}
-          >
-            <span>{showCompleted ? '▾' : '▸'}</span>
-            <span>Completed ({doneCount})</span>
-          </button>
-          {showCompleted && (
-            <div className="mt-1">
-              {completedToday.map(task => (
+      {!loading && openTotal === 0 && (
+        <div style={{
+          padding: '40px 16px', textAlign: 'center',
+          fontFamily: 'Newsreader, serif', fontSize: 16, fontStyle: 'italic',
+          color: COLOR.ink3,
+        }}>
+          Nothing on the page yet.
+        </div>
+      )}
+
+      {orderedDomains.map((k) => {
+        const d = DOMAINS[k];
+        const tasks = groups[k];
+        return (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <SectionHeader label={d.label} count={tasks.length} domain={k} accent={d.color} />
+            <div style={{ background: COLOR.paper, margin: '0 16px', borderRadius: 3, boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}` }}>
+              {tasks.map((t, i) => (
                 <TaskRow
-                  key={task.id}
-                  task={task}
+                  key={t.id}
+                  task={t}
                   showDomain={false}
-                  completed={true}
+                  noRule={i === tasks.length - 1}
+                  onComplete={handleComplete}
                   onUndo={handleUndo}
                 />
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      })}
 
-      <AddTaskFAB defaultValues={{ schedule_date: today }} onSaved={handleSaved} />
+      <AddTaskFAB defaultValues={{ schedule_date: new Date().toISOString().split('T')[0] }} onSaved={fetchAll} />
     </div>
-  )
+  );
+}
+
+function TallyItem({ dotColor, count, label }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <span style={{ width: 6, height: 6, borderRadius: 3, background: dotColor }} />
+      <b style={{ color: COLOR.ink, fontWeight: 600 }}>{count}</b>
+      <span style={{ color: COLOR.ink3 }}>{label}</span>
+    </span>
+  );
 }
