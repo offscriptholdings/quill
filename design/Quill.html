@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Quill — design system &amp; key screens</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@400;450;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: 'IBM Plex Sans', -apple-system, system-ui, sans-serif; }
+  @keyframes blink { 50% { opacity: 0 } }
+  /* hide scrollbars inside artboards */
+  .quill-art *::-webkit-scrollbar { display: none; }
+  .quill-art * { scrollbar-width: none; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="quill-system.jsx"></script>
+<script type="text/babel" src="quill-components.jsx"></script>
+<script type="text/babel" src="quill-tokens.jsx"></script>
+<script type="text/babel" src="quill-screens.jsx"></script>
+<script type="text/babel" src="quill-extras.jsx"></script>
+
+<script type="text/babel">
+  // Wrap each screen in a marker so screen-reader / inspection tooling can
+  // identify which mockup a comment lands on.
+  function Labeled({ label, w = SCREEN_W + 20, h = SCREEN_H + 20, children }) {
+    return (
+      <div data-screen-label={label} className="quill-art"
+        style={{
+          width: w, height: h,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#f0eee9',
+        }}>
+        {children}
+      </div>
+    );
+  }
+
+  // Token-section card frame for system specimen artboards
+  function TokenArtboard({ children, w = 460, h = 620 }) {
+    return (
+      <div className="quill-art" style={{
+        width: w, height: h, overflow: 'hidden',
+      }}>{children}</div>
+    );
+  }
+
+  function App() {
+    return (
+      <DesignCanvas>
+        <DCSection
+          id="cover"
+          title="Quill"
+          subtitle="A personal task & project manager. Sibling of Crucible. Linen, ink, and the writing metaphor — held lightly.">
+          <DCArtboard id="principles" label="00 · Principles" width={460} height={620}>
+            <TokenArtboard>
+              <SpecPrinciples />
+            </TokenArtboard>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="system"
+          title="Design system"
+          subtitle="Tokens map cleanly to Tailwind config. Ink scale, earth-pigment domains, sharp paper.">
+          <DCArtboard id="palette" label="01 · Palette" width={460} height={620}>
+            <TokenArtboard><SpecPalette /></TokenArtboard>
+          </DCArtboard>
+          <DCArtboard id="type" label="02 · Type" width={460} height={620}>
+            <TokenArtboard><SpecType /></TokenArtboard>
+          </DCArtboard>
+          <DCArtboard id="domains" label="03 · Domains" width={460} height={620}>
+            <TokenArtboard><SpecDomains /></TokenArtboard>
+          </DCArtboard>
+          <DCArtboard id="shape" label="04 · Spacing & shape" width={460} height={620}>
+            <TokenArtboard><SpecSpacingShape /></TokenArtboard>
+          </DCArtboard>
+          <DCArtboard id="components" label="05 · Components" width={460} height={620}>
+            <TokenArtboard><SpecComponents /></TokenArtboard>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="screens"
+          title="Key screens"
+          subtitle="Mobile-first, iPhone 13/15 width (390pt). Desktop adapts wider rails — same tokens.">
+          <DCArtboard id="01-today" label="01 · Today" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="01 Today"><ScreenToday /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="02-projects" label="02 · Projects" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="02 Projects"><ScreenProjects /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="03-project-detail" label="03 · Project detail" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="03 Project detail"><ScreenProjectDetail /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="04-domain" label="04 · By domain · Body" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="04 By domain"><ScreenDomain /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="05-capture" label="05 · Quick capture" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="05 Quick capture"><ScreenCapture /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="05a-capture-empty" label="05a · Capture · empty" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="05a Capture · empty"><ScreenCaptureEmpty /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="05b-capture-parse" label="05b · Capture · smart parse" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="05b Capture · smart parse"><ScreenCaptureParse /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="05c-capture-crucible" label="05c · From Crucible · triage" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="05c From Crucible"><ScreenCaptureFromCrucible /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="06-task-detail" label="06 · Task detail" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="06 Task detail"><ScreenTaskDetail /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="07-empty" label="07 · Empty state" width={SCREEN_W + 20} height={SCREEN_H + 20}>
+            <Labeled label="07 Empty"><ScreenEmpty /></Labeled>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="desktop"
+          title="Desktop adaptation"
+          subtitle="Same tokens, three rails: nav · list · detail. Vertical nav replaces tab bar; domains live in the rail; ⌘N inscribes from anywhere.">
+          <DCArtboard id="d1-today" label="D1 · Today · desktop" width={DESK_W + 20} height={DESK_H + 20}>
+            <Labeled label="D1 Today · desktop" w={DESK_W + 20} h={DESK_H + 20}><ScreenDesktopToday /></Labeled>
+          </DCArtboard>
+          <DCArtboard id="d2-project" label="D2 · Project detail · desktop" width={DESK_W + 20} height={DESK_H + 20}>
+            <Labeled label="D2 Project detail · desktop" w={DESK_W + 20} h={DESK_H + 20}><ScreenDesktopProject /></Labeled>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
