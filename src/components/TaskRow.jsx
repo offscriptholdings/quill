@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useTaskComplete } from '../hooks/useTaskComplete'
 import { useModal } from '../context/ModalContext'
+import { DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
+// priority is int 0–3: 3=urgent, 2=high, 1=normal, 0=low
 const PRIORITY_DOTS = {
-  urgent: '#B8848A',
-  high:   '#C49A45',
-  normal: null,
-  low:    null,
+  3: '#B8848A',
+  2: '#C49A45',
+  1: null,
+  0: null,
 }
 
 function formatDue(dateStr) {
@@ -122,7 +124,7 @@ export default function TaskRow({ task, onComplete, onUndo, onEdit, showDomain =
             border: `1px solid ${domainColor}33`,
           }}
         >
-          {task.domain}
+          {DOMAIN_DISPLAY_LABEL[task.domain] ?? task.domain}
         </span>
       )}
     </div>

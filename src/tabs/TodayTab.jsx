@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 import TaskRow from '../components/TaskRow'
 import AddTaskFAB from '../components/AddTaskFAB'
-
-const DOMAIN_ORDER = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
-const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 }
 
 function groupByDomain(tasks) {
   const groups = {}
@@ -13,7 +11,7 @@ function groupByDomain(tasks) {
     groups[t.domain].push(t)
   }
   for (const d of Object.keys(groups)) {
-    groups[d].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2))
+    groups[d].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1))
   }
   return groups
 }
@@ -35,7 +33,7 @@ export default function TodayTab() {
         .select('*, projects!project_id(name)')
         .eq('schedule_date', today)
         .eq('status', 'open')
-        .order('priority'),
+        .order('priority', { ascending: false }),
       supabase
         .schema('quill')
         .from('tasks')
@@ -105,7 +103,7 @@ export default function TodayTab() {
       {/* Open tasks grouped by domain */}
       {orderedDomains.map(domain => (
         <div key={domain} className="mb-6">
-          <h2 className="font-mono text-xs uppercase tracking-widest text-muted mb-1">{domain}</h2>
+          <h2 className="font-mono text-xs uppercase tracking-widest text-muted mb-1">{DOMAIN_DISPLAY_LABEL[domain] ?? domain}</h2>
           {groups[domain].map(task => (
             <TaskRow
               key={task.id}

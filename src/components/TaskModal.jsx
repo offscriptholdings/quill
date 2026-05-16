@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useModal } from '../context/ModalContext'
 import { useProjects } from '../hooks/useProjects'
+import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL, PRIORITY_VALUES, PRIORITY_DISPLAY_LABEL } from '../lib/domains'
 
-const DOMAINS = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
-const PRIORITIES = ['urgent', 'high', 'normal', 'low']
+const PRIORITIES = [...PRIORITY_VALUES].reverse() // [3,2,1,0] — urgent first
 const RRULE_OPTIONS = [
   { label: 'Daily',   value: 'FREQ=DAILY' },
   { label: 'Weekly',  value: 'FREQ=WEEKLY' },
@@ -12,19 +12,19 @@ const RRULE_OPTIONS = [
 ]
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
 const empty = {
   title:         '',
   notes:         '',
-  domain:        'Spirit',
+  domain:        'spirit',
   project_id:    null,
-  priority:      'normal',
+  priority:      1,
   schedule_date: '',
   due_date:      '',
   is_recurring:  false,
@@ -47,9 +47,9 @@ export default function TaskModal() {
       setForm({
         title:         task.title ?? '',
         notes:         task.notes ?? '',
-        domain:        task.domain ?? 'Spirit',
+        domain:        task.domain ?? 'spirit',
         project_id:    task.project_id ?? null,
-        priority:      task.priority ?? 'normal',
+        priority:      task.priority ?? 1,
         schedule_date: task.schedule_date ?? '',
         due_date:      task.due_date ?? '',
         is_recurring:  task.is_recurring ?? false,
@@ -79,7 +79,7 @@ export default function TaskModal() {
       title:         form.title.trim(),
       notes:         form.notes.trim() || null,
       domain:        form.domain,
-      project_id:    form.domain === 'Project' ? (form.project_id || null) : null,
+      project_id:    form.domain === 'work' ? (form.project_id || null) : null,
       priority:      form.priority,
       schedule_date: form.schedule_date || null,
       due_date:      form.due_date || null,
@@ -179,14 +179,14 @@ export default function TaskModal() {
                     minHeight: 36,
                   }}
                 >
-                  {d}
+                  {DOMAIN_DISPLAY_LABEL[d] ?? d}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Project selector — only when domain = Project */}
-          {form.domain === 'Project' && (
+          {/* Project selector — only when domain = work */}
+          {form.domain === 'work' && (
             <div>
               <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Project</label>
               <select
@@ -211,7 +211,7 @@ export default function TaskModal() {
                 <button
                   key={p}
                   onClick={() => set('priority', p)}
-                  className="flex-1 py-2 rounded-lg font-mono text-xs capitalize transition-all"
+                  className="flex-1 py-2 rounded-lg font-mono text-xs transition-all"
                   style={{
                     background: form.priority === p ? '#2A2824' : 'transparent',
                     border: `1px solid ${form.priority === p ? '#9A9187' : '#2A2824'}`,
@@ -219,7 +219,7 @@ export default function TaskModal() {
                     minHeight: 44,
                   }}
                 >
-                  {p}
+                  {PRIORITY_DISPLAY_LABEL[p]}
                 </button>
               ))}
             </div>

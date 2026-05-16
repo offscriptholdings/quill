@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 
-const DOMAINS = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
 const STATUSES = ['active', 'waiting', 'complete', 'archived']
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
-const empty = { name: '', description: '', domain: 'Project', goal: '', status: 'active' }
+const empty = { name: '', description: '', domain: 'work', goal: '', status: 'active' }
 
 export default function ProjectModal({ open, project, onClose, onSaved }) {
   const [form, setForm] = useState(empty)
@@ -136,7 +136,7 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
                     minHeight: 36,
                   }}
                 >
-                  {d}
+                  {DOMAIN_DISPLAY_LABEL[d] ?? d}
                 </button>
               ))}
             </div>

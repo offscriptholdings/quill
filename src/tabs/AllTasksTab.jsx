@@ -1,19 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL, PRIORITY_VALUES, PRIORITY_DISPLAY_LABEL } from '../lib/domains'
 import TaskRow from '../components/TaskRow'
 import AddTaskFAB from '../components/AddTaskFAB'
 
-const DOMAINS = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
-const PRIORITIES = ['urgent', 'high', 'normal', 'low']
-const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 }
+const PRIORITIES = [...PRIORITY_VALUES].reverse() // [3,2,1,0] — urgent first
 
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
 const SORT_OPTIONS = [
@@ -26,7 +25,7 @@ const SORT_OPTIONS = [
 function sortTasks(tasks, sortBy) {
   return [...tasks].sort((a, b) => {
     if (sortBy === 'priority') {
-      return (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2)
+      return (b.priority ?? 1) - (a.priority ?? 1)
     }
     const av = a[sortBy] ?? '9999'
     const bv = b[sortBy] ?? '9999'
@@ -102,7 +101,7 @@ export default function AllTasksTab() {
       }
       return DOMAINS
         .filter(d => groups[d]?.length > 0)
-        .map(d => ({ key: d, label: d, tasks: groups[d], color: DOMAIN_COLORS[d] }))
+        .map(d => ({ key: d, label: DOMAIN_DISPLAY_LABEL[d] ?? d, tasks: groups[d], color: DOMAIN_COLORS[d] }))
     } else {
       const groups = { null: [] }
       for (const p of projects) groups[p.id] = []
@@ -202,7 +201,7 @@ export default function AllTasksTab() {
                     minHeight: 32,
                   }}
                 >
-                  {d}
+                  {DOMAIN_DISPLAY_LABEL[d] ?? d}
                 </button>
               ))}
             </div>
@@ -214,7 +213,7 @@ export default function AllTasksTab() {
                 <button
                   key={p}
                   onClick={() => toggleFilter(filterPriorities, setFilterPriorities, p)}
-                  className="px-2.5 py-1 rounded-full font-mono text-xs capitalize transition-all"
+                  className="px-2.5 py-1 rounded-full font-mono text-xs transition-all"
                   style={{
                     background: filterPriorities.includes(p) ? '#2A2824' : 'transparent',
                     border: `1px solid ${filterPriorities.includes(p) ? '#9A9187' : '#2A2824'}`,
@@ -222,7 +221,7 @@ export default function AllTasksTab() {
                     minHeight: 32,
                   }}
                 >
-                  {p}
+                  {PRIORITY_DISPLAY_LABEL[p]}
                 </button>
               ))}
             </div>

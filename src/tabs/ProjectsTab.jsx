@@ -1,16 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 import ProjectDetail from '../components/ProjectDetail'
 import ProjectModal from '../components/ProjectModal'
 
-const DOMAIN_ORDER = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
-
 const DOMAIN_COLORS = {
-  Spirit:  '#C4A962',
-  Body:    '#7EA87E',
-  Project: '#6B8CAE',
-  Wealth:  '#C49A45',
-  Family:  '#B8848A',
+  spirit: '#C4A962',
+  body:   '#7EA87E',
+  work:   '#6B8CAE',
+  wealth: '#C49A45',
+  family: '#B8848A',
 }
 
 const STATUS_COLORS = {
@@ -141,7 +140,7 @@ export default function ProjectsTab() {
             className="font-mono text-xs uppercase tracking-widest mb-3"
             style={{ color: DOMAIN_COLORS[domain] }}
           >
-            {domain}
+            {DOMAIN_DISPLAY_LABEL[domain] ?? domain}
           </h2>
           {domainProjects.map(p => {
             const openCount = taskCounts[p.id] ?? 0

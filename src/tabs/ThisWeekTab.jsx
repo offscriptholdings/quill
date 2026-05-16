@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
 import TaskRow from '../components/TaskRow'
 import AddTaskFAB from '../components/AddTaskFAB'
-
-const DOMAIN_ORDER = ['Spirit', 'Body', 'Project', 'Wealth', 'Family']
-const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 }
 
 function addDays(date, n) {
   const d = new Date(date + 'T00:00:00')
@@ -26,7 +24,7 @@ function groupByDomain(tasks) {
     groups[t.domain].push(t)
   }
   for (const d of Object.keys(groups)) {
-    groups[d].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 2) - (PRIORITY_RANK[b.priority] ?? 2))
+    groups[d].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1))
   }
   return groups
 }
@@ -49,7 +47,7 @@ export default function ThisWeekTab() {
         .lt('schedule_date', endDate)
         .eq('status', 'open')
         .order('schedule_date')
-        .order('priority'),
+        .order('priority', { ascending: false }),
       supabase
         .schema('quill')
         .from('tasks')
@@ -57,7 +55,7 @@ export default function ThisWeekTab() {
         .lt('schedule_date', today)
         .eq('status', 'open')
         .order('schedule_date')
-        .order('priority'),
+        .order('priority', { ascending: false }),
     ])
 
     if (weekRes.data) {
@@ -126,7 +124,7 @@ export default function ThisWeekTab() {
           </div>
           {overdueOrderedDomains.map(domain => (
             <div key={domain} className="mb-3">
-              <p className="font-mono text-xs text-muted uppercase tracking-wide mb-1">{domain}</p>
+              <p className="font-mono text-xs text-muted uppercase tracking-wide mb-1">{DOMAIN_DISPLAY_LABEL[domain] ?? domain}</p>
               {overdueGroups[domain].map(task => (
                 <TaskRow
                   key={task.id}
@@ -152,7 +150,7 @@ export default function ThisWeekTab() {
             </h2>
             {orderedDomains.map(domain => (
               <div key={domain} className="mb-3">
-                <p className="font-mono text-xs text-muted tracking-wide mb-1 pl-0.5">{domain}</p>
+                <p className="font-mono text-xs text-muted tracking-wide mb-1 pl-0.5">{DOMAIN_DISPLAY_LABEL[domain] ?? domain}</p>
                 {groups[domain].map(task => (
                   <TaskRow
                     key={task.id}
