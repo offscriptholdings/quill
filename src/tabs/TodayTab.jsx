@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DOMAIN_ORDER, DOMAINS } from '../lib/domains';
 import ViewHeader from '../components/ViewHeader';
 import SectionHeader from '../components/SectionHeader';
 import TaskRow from '../components/TaskRow';
 import AddTaskFAB from '../components/AddTaskFAB';
+import SkeletonTaskRow from '../components/SkeletonTaskRow';
+import InlineError from '../components/InlineError';
+import { useModal } from '../context/ModalContext';
 
 const COLOR = {
   ink: '#1F1D18', ink2: '#5C5448', ink3: '#948A78',
@@ -41,24 +45,38 @@ export default function TodayTab() {
   const [blockedIds, setBlockedIds] = useState(new Set());
   const [doneCount, setDoneCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { openTaskModal } = useModal();
+  const navigate = useNavigate();
 
   const fetchAll = useCallback(async () => {
-    const todayIso = new Date().toISOString().split('T')[0];
-    const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    setLoading(true);
+    setError(null);
+    try {
+      const todayIso = new Date().toISOString().split('T')[0];
+      const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-    const [openRes, blockedRes, doneRes] = await Promise.all([
-      supabase.schema('quill').from('tasks_today').select('*, projects!project_id(name)'),
-      supabase.schema('quill').from('tasks_blocked').select('id'),
-      supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
-        .eq('status', 'done')
-        .gte('completed_at', todayIso)
-        .lt('completed_at', tomorrowIso),
-    ]);
+      const [openRes, blockedRes, doneRes] = await Promise.all([
+        supabase.schema('quill').from('tasks_today').select('*, projects!project_id(name)'),
+        supabase.schema('quill').from('tasks_blocked').select('id'),
+        supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
+          .eq('status', 'done')
+          .gte('completed_at', todayIso)
+          .lt('completed_at', tomorrowIso),
+      ]);
 
-    if (openRes.data) setOpenTasks(openRes.data);
-    setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
-    setDoneCount(doneRes.count ?? 0);
-    setLoading(false);
+      if (openRes.error) throw openRes.error;
+      if (blockedRes.error) throw blockedRes.error;
+      if (doneRes.error) throw doneRes.error;
+
+      setOpenTasks(openRes.data ?? []);
+      setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
+      setDoneCount(doneRes.count ?? 0);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -114,21 +132,37 @@ export default function TodayTab() {
 
       {loading && (
         <div style={{
-          padding: '40px 16px', textAlign: 'center',
-          fontFamily: 'Newsreader, serif', fontSize: 16, fontStyle: 'italic',
-          color: COLOR.ink3,
+          background: COLOR.paper, margin: '0 16px', borderRadius: 3,
+          boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
         }}>
-          Loading…
+          {[0, 1, 2, 3].map((i) => <SkeletonTaskRow key={i} noRule={i === 3} />)}
         </div>
       )}
 
-      {!loading && openTotal === 0 && (
-        <div style={{
-          padding: '40px 16px', textAlign: 'center',
-          fontFamily: 'Newsreader, serif', fontSize: 16, fontStyle: 'italic',
-          color: COLOR.ink3,
-        }}>
-          Nothing on the page yet.
+      {error && !loading && (
+        <InlineError onRetry={fetchAll}>Failed to load tasks.</InlineError>
+      )}
+
+      {!loading && !error && openTotal === 0 && (
+        <div style={{ padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{
+            fontFamily: 'Newsreader, serif', fontSize: 56, lineHeight: '0.6',
+            color: COLOR.rubric, fontStyle: 'italic', marginBottom: 8,
+          }}>"</div>
+          <div style={{
+            fontFamily: 'Newsreader, serif', fontSize: 20, lineHeight: '28px',
+            color: COLOR.ink2, fontStyle: 'italic', marginBottom: 18,
+          }}>
+            Nothing on the page yet.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <PromptButton onClick={() => openTaskModal({}, { onSaved: fetchAll })}>
+              Begin a new line
+            </PromptButton>
+            <PromptButton onClick={() => navigate('/someday')}>
+              Pull from Someday
+            </PromptButton>
+          </div>
         </div>
       )}
 
@@ -166,5 +200,18 @@ function TallyItem({ dotColor, count, label }) {
       <b style={{ color: COLOR.ink, fontWeight: 600 }}>{count}</b>
       <span style={{ color: COLOR.ink3 }}>{label}</span>
     </span>
+  );
+}
+
+function PromptButton({ onClick, children }) {
+  return (
+    <button onClick={onClick} style={{
+      background: 'none', border: 0, padding: '6px 0', cursor: 'pointer',
+      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+      fontSize: 11, fontWeight: 600, color: '#948A78',
+      letterSpacing: '0.05em', textTransform: 'uppercase',
+    }}>
+      {children}
+    </button>
   );
 }

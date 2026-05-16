@@ -8,8 +8,21 @@ import FilterChip from '../components/FilterChip'
 import TaskRow from '../components/TaskRow'
 import AddTaskFAB from '../components/AddTaskFAB'
 import Icon from '../components/Icon'
+import SkeletonTaskRow from '../components/SkeletonTaskRow'
+import InlineError from '../components/InlineError'
+import { useModal } from '../context/ModalContext'
 
 const COLOR = { ink: '#1F1D18', ink2: '#5C5448', ink3: '#948A78', paper: '#FAF6EC', rule: '#D9CFB8' }
+
+const inscribePillStyle = {
+  display: 'inline-flex', alignItems: 'center',
+  padding: '8px 14px', borderRadius: 15,
+  background: 'transparent', boxShadow: 'inset 0 0 0 1px #8E3A1A',
+  color: '#8E3A1A',
+  fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+  fontSize: 13, fontWeight: 600,
+  border: 0, cursor: 'pointer',
+}
 
 export default function DomainScreen() {
   const { slug } = useParams()
@@ -21,22 +34,34 @@ export default function DomainScreen() {
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [todayIds, setTodayIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [filter, setFilter] = useState('open')
+  const { openTaskModal } = useModal()
 
   const fetchData = useCallback(async () => {
     if (!slug) return
     setLoading(true)
-    const [tRes, rRes, bRes, todRes] = await Promise.all([
-      supabase.schema('quill').from('tasks').select('*, projects!project_id(name)').eq('domain', slug),
-      supabase.schema('quill').from('tasks_ready').select('id').eq('domain', slug),
-      supabase.schema('quill').from('tasks_blocked').select('id').eq('domain', slug),
-      supabase.schema('quill').from('tasks_today').select('id').eq('domain', slug),
-    ])
-    setTasks(tRes.data ?? [])
-    setReadyIds(new Set((rRes.data ?? []).map((r) => r.id)))
-    setBlockedIds(new Set((bRes.data ?? []).map((r) => r.id)))
-    setTodayIds(new Set((todRes.data ?? []).map((r) => r.id)))
-    setLoading(false)
+    setError(null)
+    try {
+      const [tRes, rRes, bRes, todRes] = await Promise.all([
+        supabase.schema('quill').from('tasks').select('*, projects!project_id(name)').eq('domain', slug),
+        supabase.schema('quill').from('tasks_ready').select('id').eq('domain', slug),
+        supabase.schema('quill').from('tasks_blocked').select('id').eq('domain', slug),
+        supabase.schema('quill').from('tasks_today').select('id').eq('domain', slug),
+      ])
+      if (tRes.error) throw tRes.error
+      if (rRes.error) throw rRes.error
+      if (bRes.error) throw bRes.error
+      if (todRes.error) throw todRes.error
+      setTasks(tRes.data ?? [])
+      setReadyIds(new Set((rRes.data ?? []).map((r) => r.id)))
+      setBlockedIds(new Set((bRes.data ?? []).map((r) => r.id)))
+      setTodayIds(new Set((todRes.data ?? []).map((r) => r.id)))
+    } catch (e) {
+      setError(e)
+    } finally {
+      setLoading(false)
+    }
   }, [slug])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -125,11 +150,27 @@ export default function DomainScreen() {
       </div>
 
       {loading && (
-        <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Newsreader, serif', fontStyle: 'italic', fontSize: 16, color: COLOR.ink3 }}>Loading…</div>
+        <div style={{
+          background: COLOR.paper, margin: '0 16px', borderRadius: 3,
+          boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
+        }}>
+          {[0, 1, 2, 3].map((i) => <SkeletonTaskRow key={i} noRule={i === 3} />)}
+        </div>
       )}
-      {!loading && visible.length === 0 && (
-        <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Newsreader, serif', fontStyle: 'italic', fontSize: 16, color: COLOR.ink3 }}>
-          Nothing here in this domain.
+      {error && !loading && (
+        <InlineError onRetry={fetchData}>Failed to load domain tasks.</InlineError>
+      )}
+      {!loading && !error && visible.length === 0 && (
+        <div style={{ padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{
+            fontFamily: 'Newsreader, serif', fontSize: 18, lineHeight: '24px',
+            color: COLOR.ink2, fontStyle: 'italic', marginBottom: 14,
+          }}>
+            No open lines in {d.label}.
+          </div>
+          <button onClick={() => openTaskModal({ domain: slug }, { onSaved: fetchData })} style={inscribePillStyle}>
+            Inscribe
+          </button>
         </div>
       )}
 
