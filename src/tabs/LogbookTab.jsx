@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import Icon from '../components/Icon'
 
 const DOMAIN_COLORS = {
   spirit: '#C4A962',
@@ -126,10 +127,11 @@ export default function LogbookTab() {
       {/* Back button */}
       <button
         onClick={() => navigate('/all-tasks')}
-        className="flex items-center gap-2 font-mono text-xs text-muted mb-4"
+        className="flex items-center gap-2 font-mono text-xs text-ink-3 mb-4"
         style={{ minHeight: 44 }}
       >
-        ← All Tasks
+        <Icon name="chevron-l" size={14} />
+        <span>All Tasks</span>
       </button>
 
       <div className="flex items-center justify-between mb-4">
@@ -167,7 +169,7 @@ export default function LogbookTab() {
             className="flex-1 bg-transparent text-ink font-mono text-xs border border-border rounded-lg px-2 py-1.5 outline-none"
             style={{ minHeight: 36, colorScheme: 'dark' }}
           />
-          <span className="font-mono text-xs text-muted">→</span>
+          <Icon name="arrow-r" size={12} className="text-ink-3" />
           <input
             type="date"
             value={rangeEnd}
