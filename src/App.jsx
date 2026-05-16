@@ -12,6 +12,7 @@ import MenuTab from './tabs/MenuTab';
 import LogbookTab from './tabs/LogbookTab';
 import DomainScreen from './tabs/DomainScreen';
 import TaskDetailScreen from './tabs/TaskDetailScreen';
+import CrucibleCaptureScreen from './tabs/CrucibleCaptureScreen';
 
 function formatDate(d) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/menu/logbook"   element={<LogbookTab />} />
               <Route path="/domain/:slug"   element={<DomainScreen />} />
               <Route path="/task/:id"       element={<TaskDetailScreen />} />
+              <Route path="/inbox"          element={<CrucibleCaptureScreen />} />
               {/* Redirects from old routes */}
               <Route path="/this-week"      element={<Navigate to="/today" replace />} />
               <Route path="/all-tasks"      element={<Navigate to="/someday" replace />} />

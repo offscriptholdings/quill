@@ -23,6 +23,8 @@ export default function CaptureSheet() {
   const open = modalState.open
   const editing = !!modalState.task?.id
   const defaults = modalState.task ?? {}
+  const isCrucible = !!modalState.task?._crucible
+  const crucibleData = modalState.task?._crucible
 
   const [title, setTitle] = useState('')
   const [parseResult, setParseResult] = useState({ cleanedTitle: '', tokens: [], resolved: {} })
@@ -100,6 +102,7 @@ export default function CaptureSheet() {
   const handleSubmit = useCallback(async () => {
     const finalTitle = (parseResult.cleanedTitle || title).trim()
     if (!finalTitle) return
+    if (isCrucible && (!domain || !scheduleDate)) return
     setSubmitting(true)
     const payload = {
       title: finalTitle,
@@ -111,7 +114,7 @@ export default function CaptureSheet() {
           ? new Date(`${scheduleDate}T${scheduledTime}:00`).toISOString()
           : null,
       project_id: projectId,
-      source: 'manual',
+      source: isCrucible ? 'crucible' : 'manual',
       status: 'open',
     }
     let savedRow
@@ -139,6 +142,16 @@ export default function CaptureSheet() {
         depends_on_task_id: waitsOn.id,
       })
     }
+    if (isCrucible && savedRow) {
+      await supabase
+        .schema('quill')
+        .from('inbox')
+        .update({
+          triaged_at: new Date().toISOString(),
+          task_id: savedRow.id,
+        })
+        .eq('id', crucibleData.inbox_id)
+    }
     modalState.onSaved?.(savedRow, editing ? 'update' : 'create')
     closeTaskModal()
   }, [
@@ -151,9 +164,26 @@ export default function CaptureSheet() {
     projectId,
     waitsOn,
     editing,
+    isCrucible,
+    crucibleData,
     modalState,
     closeTaskModal,
   ])
+
+  const handleSkip = useCallback(async () => {
+    if (!isCrucible || !crucibleData) return
+    setSubmitting(true)
+    await supabase
+      .schema('quill')
+      .from('inbox')
+      .update({
+        triaged_at: new Date().toISOString(),
+        task_id: null,
+      })
+      .eq('id', crucibleData.inbox_id)
+    modalState.onSaved?.(null, 'skip')
+    closeTaskModal()
+  }, [isCrucible, crucibleData, modalState, closeTaskModal])
 
   if (!open) return null
 
@@ -190,6 +220,46 @@ export default function CaptureSheet() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 10px' }}>
           <span style={{ width: 36, height: 4, borderRadius: 2, background: COLOR.rule }} />
         </div>
+        {isCrucible && (
+          <>
+            <div
+              style={{
+                margin: '-8px -16px 12px',
+                padding: '10px 16px',
+                background: COLOR.gold,
+                color: COLOR.linen,
+                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <span>FROM CRUCIBLE</span>
+              <span style={{ flex: 1 }} />
+              {crucibleData?.counter && (
+                <span style={{ opacity: 0.8 }}>
+                  {crucibleData.counter.n} OF {crucibleData.counter.total}
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                fontFamily: 'Newsreader, serif',
+                fontStyle: 'italic',
+                fontSize: 16,
+                color: COLOR.ink2,
+                borderLeft: '2px solid ' + COLOR.rubric,
+                paddingLeft: 10,
+                margin: '0 0 14px',
+              }}
+            >
+              {extractCapturedText(crucibleData?.payload)}
+            </div>
+          </>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
           <span
             style={{
@@ -200,18 +270,33 @@ export default function CaptureSheet() {
               letterSpacing: '0.08em',
             }}
           >
-            {editing ? 'EDIT' : 'CAPTURE'}
+            {isCrucible ? 'TRIAGE' : editing ? 'EDIT' : 'CAPTURE'}
           </span>
           <span style={{ flex: 1 }} />
-          <button onClick={closeTaskModal} style={btnTextStyle(COLOR.ink3)}>
-            Cancel
-          </button>
+          {isCrucible ? (
+            <button onClick={handleSkip} disabled={submitting} style={btnTextStyle(COLOR.ink3)}>
+              Skip
+            </button>
+          ) : (
+            <button onClick={closeTaskModal} style={btnTextStyle(COLOR.ink3)}>
+              Cancel
+            </button>
+          )}
           <button
             onClick={handleSubmit}
-            disabled={submitting || !title.trim()}
+            disabled={
+              submitting ||
+              !title.trim() ||
+              (isCrucible && (!domain || !scheduleDate))
+            }
             style={{
               ...btnPillStyle(COLOR.ink, COLOR.linen),
-              opacity: submitting || !title.trim() ? 0.5 : 1,
+              opacity:
+                submitting ||
+                !title.trim() ||
+                (isCrucible && (!domain || !scheduleDate))
+                  ? 0.5
+                  : 1,
             }}
           >
             {editing ? 'Save' : 'Inscribe'}
@@ -403,4 +488,10 @@ function fuzzyFind(items, query, getStr) {
   const prefix = items.find((it) => getStr(it)?.toLowerCase().startsWith(q))
   if (prefix) return prefix
   return items.find((it) => getStr(it)?.toLowerCase().includes(q)) ?? null
+}
+
+function extractCapturedText(payload) {
+  if (!payload) return ''
+  if (typeof payload === 'string') return payload
+  return payload.text ?? payload.title ?? payload.content ?? JSON.stringify(payload)
 }
