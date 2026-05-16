@@ -126,12 +126,12 @@ export default function LogbookTab() {
     <div className="px-4 pt-4 pb-24">
       {/* Back button */}
       <button
-        onClick={() => navigate('/all-tasks')}
+        onClick={() => navigate('/menu')}
         className="flex items-center gap-2 font-mono text-xs text-ink-3 mb-4"
         style={{ minHeight: 44 }}
       >
         <Icon name="chevron-l" size={14} />
-        <span>All Tasks</span>
+        <span>Menu</span>
       </button>
 
       <div className="flex items-center justify-between mb-4">
