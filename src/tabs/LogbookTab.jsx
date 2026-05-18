@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import { localTodayIso } from '../lib/date'
 import Icon from '../components/Icon'
 
 const DOMAIN_COLORS = {
@@ -69,7 +70,7 @@ function CompletedTaskRow({ task }) {
 
 export default function LogbookTab() {
   const navigate = useNavigate()
-  const today = new Date().toISOString().split('T')[0]
+  const today = localTodayIso()
 
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)

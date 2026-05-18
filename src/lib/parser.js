@@ -4,6 +4,7 @@
 // Types: 'domain' | 'project' | 'date' | 'time' | 'priority' | 'waits-on'
 
 import { DOMAIN_VALUES } from './domains'
+import { localDateIso } from './date'
 
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
@@ -153,5 +154,5 @@ export function parseInput(text) {
 }
 
 function isoDate(d) {
-  return d.toISOString().split('T')[0]
+  return localDateIso(d)
 }
