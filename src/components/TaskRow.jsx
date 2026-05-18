@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 import { DOMAINS } from '../lib/domains';
+import { localTodayIso, addDaysIso } from '../lib/date';
 import { useTaskState } from '../hooks/useTaskState';
 import { useTaskComplete } from '../hooks/useTaskComplete';
 import TaskCheck from './TaskCheck';
@@ -20,8 +21,8 @@ const COLOR = {
 
 function formatDue(dateStr) {
   if (!dateStr) return null;
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const today = localTodayIso();
+  const tomorrow = addDaysIso(today, 1);
   if (dateStr === today) return 'due today';
   if (dateStr === tomorrow) return 'due tomorrow';
   const isPast = dateStr < today;
@@ -58,7 +59,7 @@ export default function TaskRow({
   const dim = state === 'done';
   const d = DOMAINS[task?.domain];
 
-  const todayIso = new Date().toISOString().split('T')[0];
+  const todayIso = localTodayIso();
   const today = todayProp ?? (task?.schedule_date === todayIso);
 
   const handleComplete = useCallback(() => {

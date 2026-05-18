@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { DOMAIN_ORDER, DOMAINS } from '../lib/domains';
+import { localTodayIso, addDaysIso } from '../lib/date';
 import ViewHeader from '../components/ViewHeader';
 import SectionHeader from '../components/SectionHeader';
 import TaskRow from '../components/TaskRow';
@@ -53,11 +54,13 @@ export default function TodayTab() {
     setLoading(true);
     setError(null);
     try {
-      const todayIso = new Date().toISOString().split('T')[0];
-      const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const todayIso = localTodayIso();
+      const tomorrowIso = addDaysIso(todayIso, 1);
 
       const [openRes, blockedRes, doneRes] = await Promise.all([
-        supabase.schema('quill').from('tasks_today').select('*, projects!project_id(name)'),
+        supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
+          .eq('status', 'open')
+          .or(`schedule_date.eq.${todayIso},and(due_date.not.is.null,due_date.lte.${todayIso})`),
         supabase.schema('quill').from('tasks_blocked').select('id'),
         supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
           .eq('status', 'done')
@@ -188,7 +191,7 @@ export default function TodayTab() {
         );
       })}
 
-      <AddTaskFAB defaultValues={{ schedule_date: new Date().toISOString().split('T')[0] }} onSaved={fetchAll} />
+      <AddTaskFAB defaultValues={{ schedule_date: localTodayIso() }} onSaved={fetchAll} />
     </div>
   );
 }

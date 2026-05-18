@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { DOMAINS } from '../lib/domains'
+import { localTodayIso } from '../lib/date'
 import DomainBadge from '../components/DomainBadge'
 import SectionHeader from '../components/SectionHeader'
 import FilterChip from '../components/FilterChip'
@@ -43,11 +44,15 @@ export default function DomainScreen() {
     setLoading(true)
     setError(null)
     try {
+      const todayIso = localTodayIso()
       const [tRes, rRes, bRes, todRes] = await Promise.all([
         supabase.schema('quill').from('tasks').select('*, projects!project_id(name)').eq('domain', slug),
         supabase.schema('quill').from('tasks_ready').select('id').eq('domain', slug),
         supabase.schema('quill').from('tasks_blocked').select('id').eq('domain', slug),
-        supabase.schema('quill').from('tasks_today').select('id').eq('domain', slug),
+        supabase.schema('quill').from('tasks').select('id')
+          .eq('status', 'open')
+          .eq('domain', slug)
+          .or(`schedule_date.eq.${todayIso},and(due_date.not.is.null,due_date.lte.${todayIso})`),
       ])
       if (tRes.error) throw tRes.error
       if (rRes.error) throw rRes.error
