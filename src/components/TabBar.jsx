@@ -5,10 +5,11 @@ import Icon from './Icon';
 const COLOR = { ink: '#1F1D18', ink3: '#948A78', rule: '#D9CFB8', rubric: '#8E3A1A', linen: '#F2EDE3' };
 
 const TABS = [
-  { id: 'today',    label: 'Today',    icon: 'today',   path: '/today' },
-  { id: 'projects', label: 'Projects', icon: 'list',    path: '/projects' },
-  { id: 'someday',  label: 'Someday',  icon: 'horizon', path: '/someday' },
-  { id: 'menu',     label: 'Menu',     icon: 'menu',    path: '/menu' },
+  { id: 'today',      label: 'Today',      icon: 'today',   path: '/today' },
+  { id: 'everything', label: 'Everything', icon: 'archive', path: '/everything' },
+  { id: 'projects',   label: 'Projects',   icon: 'list',    path: '/projects' },
+  { id: 'someday',    label: 'Someday',    icon: 'horizon', path: '/someday' },
+  { id: 'menu',       label: 'Menu',       icon: 'menu',    path: '/menu' },
 ];
 
 /**
@@ -31,7 +32,7 @@ export default function TabBar() {
       }}
     >
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
         height: 56,
       }}>
         {TABS.map((t) => {
