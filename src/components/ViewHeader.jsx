@@ -13,6 +13,13 @@ const COLOR = { ink: '#1F1D18', ink3: '#948A78', rubric: '#8E3A1A' };
  * @param {React.CSSProperties} [style]
  */
 export default function ViewHeader({ kicker, title, dropCap, count, action, style }) {
+  // When dropCap matches the first letter of title (manuscript convention),
+  // strip it from the h1 so the drop-cap REPLACES the first letter rather than
+  // duplicating it. Otherwise render dropCap + full title.
+  const dropCapMatchesFirstLetter =
+    dropCap && title && dropCap.toLowerCase() === title.charAt(0).toLowerCase();
+  const h1Text = dropCapMatchesFirstLetter ? title.slice(1) : title;
+
   return (
     <div style={{ padding: '4px 16px 12px', ...style }}>
       {kicker && (
@@ -23,7 +30,7 @@ export default function ViewHeader({ kicker, title, dropCap, count, action, styl
           fontWeight: 600, marginBottom: 4,
         }}>{kicker}</div>
       )}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
         {dropCap && (
           <span style={{
             fontFamily: 'Newsreader, serif',
@@ -37,7 +44,7 @@ export default function ViewHeader({ kicker, title, dropCap, count, action, styl
           fontSize: 32, lineHeight: '36px',
           color: COLOR.ink, fontWeight: 500, margin: 0,
           letterSpacing: '-0.4px',
-        }}>{title}</h1>
+        }}>{h1Text}</h1>
         {count !== undefined && (
           <span style={{
             fontFamily: '"IBM Plex Mono", ui-monospace, monospace',

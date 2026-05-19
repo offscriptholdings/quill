@@ -13,9 +13,8 @@ const COLOR = { ink3: '#948A78', rule: '#D9CFB8', linen: '#F2EDE3' };
 export default function AppTopBar({ left, right, style }) {
   return (
     <div
-      className="safe-top"
       style={{
-        paddingTop: 8,
+        paddingTop: 'calc(8px + env(safe-area-inset-top))',
         paddingBottom: 8,
         paddingLeft: 16, paddingRight: 16,
         display: 'flex', alignItems: 'center', gap: 8,
