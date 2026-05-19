@@ -25,3 +25,21 @@ export function formatLocalTime(iso) {
     .replace(' AM', 'a')
     .replace(' PM', 'p');
 }
+
+// Format a YYYY-MM-DD date range as an uppercase mono caption.
+// Same day:        "MAY 19"
+// Same month:      "MAY 18–20"
+// Cross-month:     "MAY 30–JUN 2"
+export function formatDateRange(startIso, endIso) {
+  if (!startIso || !endIso) return '';
+  const start = new Date(`${startIso}T12:00:00`);
+  const end = new Date(`${endIso}T12:00:00`);
+  const opts = { month: 'short', day: 'numeric' };
+  const startStr = start.toLocaleDateString('en-US', opts).toUpperCase();
+  if (startIso === endIso) return startStr;
+  if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    return `${startStr}–${end.getDate()}`;
+  }
+  const endStr = end.toLocaleDateString('en-US', opts).toUpperCase();
+  return `${startStr}–${endStr}`;
+}

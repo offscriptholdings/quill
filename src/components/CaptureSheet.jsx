@@ -67,6 +67,7 @@ export default function CaptureSheet() {
   const [domainPickerOpen, setDomainPickerOpen] = useState(false)
   const [kind, setKind] = useState('task')
   const [location, setLocation] = useState('')
+  const [endDate, setEndDate] = useState(null)
 
   const sheetRef = useRef(null)
 
@@ -85,6 +86,7 @@ export default function CaptureSheet() {
     setParseResult({ cleanedTitle: '', tokens: [], resolved: {} })
     setKind(t.kind ?? 'task')
     setLocation(t.location ?? '')
+    setEndDate(t.due_date ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, modalState.task])
 
@@ -130,12 +132,20 @@ export default function CaptureSheet() {
   }, [title, allProjects, openTasks])
 
   const isTimed = kind === 'meeting' || kind === 'appointment'
+  const isTrip = kind === 'trip'
+
+  useEffect(() => {
+    if (isTrip && scheduleDate && !endDate) {
+      setEndDate(scheduleDate)
+    }
+  }, [isTrip, scheduleDate, endDate])
 
   const handleSubmit = useCallback(async () => {
     const finalTitle = (parseResult.cleanedTitle || title).trim()
     if (!finalTitle) return
     if (isCrucible && (!domain || !scheduleDate)) return
     if (isTimed && (!scheduleDate || !scheduledTime)) return
+    if (isTrip && (!scheduleDate || !endDate || endDate < scheduleDate)) return
     setSubmitting(true)
     const payload = {
       title: finalTitle,
@@ -143,6 +153,7 @@ export default function CaptureSheet() {
       priority,
       kind,
       schedule_date: scheduleDate,
+      due_date: isTrip ? endDate : null,
       scheduled:
         scheduleDate && scheduledTime
           ? new Date(`${scheduleDate}T${scheduledTime}:00`).toISOString()
@@ -151,7 +162,7 @@ export default function CaptureSheet() {
       source: isCrucible ? 'crucible' : 'manual',
       status: 'open',
     }
-    payload.location = isTimed && location.trim() ? location.trim() : null
+    payload.location = (isTimed || isTrip) && location.trim() ? location.trim() : null
     let savedRow
     if (editing) {
       const { data } = await supabase
@@ -213,6 +224,8 @@ export default function CaptureSheet() {
     kind,
     location,
     isTimed,
+    isTrip,
+    endDate,
     showToast,
   ])
 
@@ -334,7 +347,8 @@ export default function CaptureSheet() {
               submitting ||
               !title.trim() ||
               (isCrucible && (!domain || !scheduleDate)) ||
-              (isTimed && (!scheduleDate || !scheduledTime))
+              (isTimed && (!scheduleDate || !scheduledTime)) ||
+              (isTrip && (!scheduleDate || !endDate || endDate < scheduleDate))
             }
             style={{
               ...btnPillStyle(COLOR.ink, COLOR.linen),
@@ -342,7 +356,8 @@ export default function CaptureSheet() {
                 submitting ||
                 !title.trim() ||
                 (isCrucible && (!domain || !scheduleDate)) ||
-                (isTimed && (!scheduleDate || !scheduledTime))
+                (isTimed && (!scheduleDate || !scheduledTime)) ||
+                (isTrip && (!scheduleDate || !endDate || endDate < scheduleDate))
                   ? 0.5
                   : 1,
             }}
@@ -350,11 +365,12 @@ export default function CaptureSheet() {
             {editing ? 'Save' : 'Inscribe'}
           </button>
         </div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
           {[
             { value: 'task', label: 'Task' },
             { value: 'meeting', label: 'Meeting' },
             { value: 'appointment', label: 'Appointment' },
+            { value: 'trip', label: 'Trip' },
           ].map((opt) => {
             const selected = kind === opt.value
             return (
@@ -446,6 +462,53 @@ export default function CaptureSheet() {
             />
           </div>
         )}
+        {isTrip && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0 10px' }}>
+            <span style={{
+              fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+              fontSize: 10, fontWeight: 600, color: COLOR.ink3,
+              letterSpacing: '0.07em', textTransform: 'uppercase',
+            }}>
+              End date
+            </span>
+            <input
+              type="date"
+              value={endDate ?? ''}
+              onChange={(e) => setEndDate(e.target.value || null)}
+              min={scheduleDate ?? undefined}
+              disabled={!scheduleDate}
+              style={{
+                width: 180,
+                padding: '6px 10px',
+                border: `0.5px solid ${COLOR.rule}`,
+                borderRadius: 3,
+                background: scheduleDate ? COLOR.paper : COLOR.linen,
+                color: scheduleDate ? COLOR.ink : COLOR.ink3,
+                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontSize: 13,
+                outline: 'none',
+              }}
+            />
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Destination (optional)"
+              style={{
+                width: '100%',
+                marginTop: 4,
+                padding: '6px 10px',
+                border: `0.5px solid ${COLOR.rule}`,
+                borderRadius: 3,
+                background: COLOR.paper,
+                color: COLOR.ink,
+                fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+                fontSize: 13,
+                outline: 'none',
+              }}
+            />
+          </div>
+        )}
         {(projectName || domain || scheduleDate || priority > 0 || waitsOn) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0' }}>
             {projectName && (
@@ -468,6 +531,11 @@ export default function CaptureSheet() {
               >
                 {scheduleDate}
                 {scheduledTime ? ' ' + scheduledTime : ''}
+              </Chip>
+            )}
+            {isTrip && endDate && (
+              <Chip onClear={() => setEndDate(null)}>
+                → {endDate}
               </Chip>
             )}
             {priority > 0 && (

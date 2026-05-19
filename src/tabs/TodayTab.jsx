@@ -9,11 +9,12 @@ import TaskRow from '../components/TaskRow';
 import AddTaskFAB from '../components/AddTaskFAB';
 import SkeletonTaskRow from '../components/SkeletonTaskRow';
 import InlineError from '../components/InlineError';
+import TripBanner from '../components/TripBanner';
 import { useModal } from '../context/ModalContext';
 
 const COLOR = {
   ink: '#1F1D18', ink2: '#5C5448', ink3: '#948A78',
-  paper: '#FAF6EC', rule: '#D9CFB8', rubric: '#8E3A1A',
+  paper: '#FAF6EC', rule: '#D9CFB8', ruleSoft: '#E5DCC6', rubric: '#8E3A1A',
 };
 
 function ordinal(n) {
@@ -43,10 +44,12 @@ function formatKicker(d) {
 
 export default function TodayTab() {
   const [openTasks, setOpenTasks] = useState([]);
+  const [trips, setTrips] = useState([]);
   const [blockedIds, setBlockedIds] = useState(new Set());
   const [doneCount, setDoneCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
   const { openTaskModal } = useModal();
   const navigate = useNavigate();
 
@@ -57,14 +60,20 @@ export default function TodayTab() {
       const todayIso = localTodayIso();
       const tomorrowIso = addDaysIso(todayIso, 1);
 
-      const [openByDateRes, openByTimeRes, blockedRes, doneRes] = await Promise.all([
+      const [openByDateRes, openByTimeRes, tripsRes, blockedRes, doneRes] = await Promise.all([
         supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
           .eq('status', 'open')
+          .neq('kind', 'trip')
           .or(`schedule_date.eq.${todayIso},and(due_date.not.is.null,due_date.lte.${todayIso})`),
         supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
           .eq('status', 'open')
           .gte('scheduled', `${todayIso}T00:00:00`)
           .lt('scheduled', `${tomorrowIso}T00:00:00`),
+        supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
+          .eq('status', 'open')
+          .eq('kind', 'trip')
+          .lte('schedule_date', todayIso)
+          .gte('due_date', todayIso),
         supabase.schema('quill').from('tasks_blocked').select('id'),
         supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
           .eq('status', 'done')
@@ -74,6 +83,7 @@ export default function TodayTab() {
 
       if (openByDateRes.error) throw openByDateRes.error;
       if (openByTimeRes.error) throw openByTimeRes.error;
+      if (tripsRes.error) throw tripsRes.error;
       if (blockedRes.error) throw blockedRes.error;
       if (doneRes.error) throw doneRes.error;
 
@@ -81,6 +91,7 @@ export default function TodayTab() {
       for (const t of openByDateRes.data ?? []) mergedById.set(t.id, t);
       for (const t of openByTimeRes.data ?? []) mergedById.set(t.id, t);
       setOpenTasks(Array.from(mergedById.values()));
+      setTrips(tripsRes.data ?? []);
       setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
       setDoneCount(doneRes.count ?? 0);
     } catch (e) {
@@ -101,8 +112,17 @@ export default function TodayTab() {
     fetchAll();
   }, [fetchAll]);
 
+  const isMeeting = (t) => t.kind === 'meeting' || t.kind === 'appointment';
+  const visibleTasks =
+    filter === 'tasks' ? openTasks.filter((t) => !isMeeting(t)) :
+    filter === 'meetings' ? openTasks.filter(isMeeting) :
+    filter === 'trips' ? [] :
+    openTasks;
+  const visibleTrips =
+    filter === 'tasks' || filter === 'meetings' ? [] : trips;
+
   const groups = {};
-  for (const t of openTasks) {
+  for (const t of visibleTasks) {
     if (!groups[t.domain]) groups[t.domain] = [];
     groups[t.domain].push(t);
   }
@@ -117,11 +137,27 @@ export default function TodayTab() {
   }
   const orderedDomains = DOMAIN_ORDER.filter((d) => groups[d]?.length > 0);
 
-  const openTotal = openTasks.length;
-  const blockedTotal = openTasks.filter((t) => blockedIds.has(t.id)).length;
+  const openTotal = visibleTasks.length;
+  const blockedTotal = visibleTasks.filter((t) => blockedIds.has(t.id)).length;
+  const tallyVisible = filter !== 'trips';
+  const showTaskEmpty = !loading && !error && filter !== 'trips' && visibleTasks.length === 0;
+  const showTripEmpty = !loading && !error && filter === 'trips' && visibleTrips.length === 0;
+
+  const emptyCopy =
+    filter === 'meetings' ? 'No meetings on the day.' :
+    filter === 'trips' ? 'No trips today.' :
+    filter === 'tasks' ? 'No tasks on the page yet.' :
+    'Nothing on the page yet.';
 
   const now = new Date();
   const kicker = formatKicker(now);
+
+  const FILTERS = [
+    { id: 'all', label: 'All' },
+    { id: 'tasks', label: 'Tasks' },
+    { id: 'meetings', label: 'Meetings' },
+    { id: 'trips', label: 'Trips' },
+  ];
 
   return (
     <div style={{ minHeight: '100%', background: '#F2EDE3' }}>
@@ -132,20 +168,51 @@ export default function TodayTab() {
         count={openTotal}
       />
 
-      <div style={{
-        margin: '0 16px 14px', padding: '8px 12px',
-        background: COLOR.paper, borderRadius: 3,
-        boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
-        display: 'flex', alignItems: 'center', gap: 14,
-        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-        fontSize: 11, color: COLOR.ink2, fontVariantNumeric: 'tabular-nums',
-      }}>
-        <TallyItem dotColor={COLOR.rubric} count={openTotal} label="open" />
-        <TallyItem dotColor={COLOR.ink3}   count={blockedTotal} label="blocked" />
-        <TallyItem dotColor={COLOR.ink}    count={doneCount} label="done" />
-        <span style={{ flex: 1 }} />
-        <span style={{ color: COLOR.ink3 }}>by domain</span>
+      <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px' }}>
+        {FILTERS.map(({ id, label }) => {
+          const on = filter === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setFilter(id)}
+              style={{
+                background: on ? COLOR.ink : COLOR.paper,
+                color: on ? COLOR.paper : COLOR.ink2,
+                border: `0.5px solid ${on ? COLOR.ink : COLOR.rule}`,
+                borderRadius: 15,
+                padding: '5px 14px',
+                fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+                fontSize: 12,
+                fontWeight: on ? 600 : 500,
+                cursor: 'pointer',
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
+
+      {tallyVisible && (
+        <div style={{
+          margin: '0 16px 14px', padding: '8px 12px',
+          background: COLOR.paper, borderRadius: 3,
+          boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}`,
+          display: 'flex', alignItems: 'center', gap: 14,
+          fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+          fontSize: 11, color: COLOR.ink2, fontVariantNumeric: 'tabular-nums',
+        }}>
+          <TallyItem dotColor={COLOR.rubric} count={openTotal} label="open" />
+          <TallyItem dotColor={COLOR.ink3}   count={blockedTotal} label="blocked" />
+          <TallyItem dotColor={COLOR.ink}    count={doneCount} label="done" />
+          <span style={{ flex: 1 }} />
+          <span style={{ color: COLOR.ink3 }}>by domain</span>
+        </div>
+      )}
+
+      {visibleTrips.map((trip) => (
+        <TripBanner key={trip.id} trip={trip} />
+      ))}
 
       {loading && (
         <div style={{
@@ -160,7 +227,22 @@ export default function TodayTab() {
         <InlineError onRetry={fetchAll}>Failed to load tasks.</InlineError>
       )}
 
-      {!loading && !error && openTotal === 0 && (
+      {showTripEmpty && (
+        <div style={{ padding: '40px 32px', textAlign: 'center' }}>
+          <div style={{
+            fontFamily: 'Newsreader, serif', fontSize: 56, lineHeight: '0.6',
+            color: COLOR.rubric, fontStyle: 'italic', marginBottom: 8,
+          }}>"</div>
+          <div style={{
+            fontFamily: 'Newsreader, serif', fontSize: 20, lineHeight: '28px',
+            color: COLOR.ink2, fontStyle: 'italic',
+          }}>
+            {emptyCopy}
+          </div>
+        </div>
+      )}
+
+      {showTaskEmpty && visibleTrips.length === 0 && (
         <div style={{ padding: '40px 32px', textAlign: 'center' }}>
           <div style={{
             fontFamily: 'Newsreader, serif', fontSize: 56, lineHeight: '0.6',
@@ -170,16 +252,18 @@ export default function TodayTab() {
             fontFamily: 'Newsreader, serif', fontSize: 20, lineHeight: '28px',
             color: COLOR.ink2, fontStyle: 'italic', marginBottom: 18,
           }}>
-            Nothing on the page yet.
+            {emptyCopy}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <PromptButton onClick={() => openTaskModal({}, { onSaved: fetchAll })}>
-              Begin a new line
-            </PromptButton>
-            <PromptButton onClick={() => navigate('/someday')}>
-              Pull from Someday
-            </PromptButton>
-          </div>
+          {filter === 'all' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <PromptButton onClick={() => openTaskModal({}, { onSaved: fetchAll })}>
+                Begin a new line
+              </PromptButton>
+              <PromptButton onClick={() => navigate('/someday')}>
+                Pull from Someday
+              </PromptButton>
+            </div>
+          )}
         </div>
       )}
 
