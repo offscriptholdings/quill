@@ -1,8 +1,9 @@
 /**
- * 5 domain glyphs: flame (spirit), figure (body), pen-nib (work),
- * coin (wealth), hearth (family). currentColor strokes — parent sets hue.
+ * 6 domain glyphs: flame (spirit), figure (body), pen-nib (work),
+ * coin (wealth), hearth-house (family), house-with-chimney (home).
+ * currentColor strokes — parent sets hue.
  *
- * @param {'spirit'|'body'|'work'|'wealth'|'family'} domain
+ * @param {'spirit'|'body'|'work'|'wealth'|'family'|'home'} domain
  * @param {number} [size=14]
  * @param {number} [strokeWidth=1.25]
  * @param {string} [className]
@@ -53,12 +54,20 @@ export default function DomainGlyph({ domain, size = 14, strokeWidth = 1.25, cla
           <path d="M8 4.6v6.8M5.6 6.4l4.8 3.2M10.4 6.4l-4.8 3.2"/>
         </svg>
       )
-    case 'family': // hearth / house
+    case 'family': // hearth / house with door
       return (
         <svg {...common}>
           <path d="M2.6 8L8 3.4 13.4 8"/>
           <path d="M3.8 7.4v6h8.4v-6"/>
           <path d="M6.6 13.4V10h2.8v3.4"/>
+        </svg>
+      )
+    case 'home': // house silhouette with chimney (no door — distinct from family)
+      return (
+        <svg {...common}>
+          <path d="M2.6 8L8 3.4 13.4 8"/>
+          <path d="M3.8 7.4v6h8.4v-6"/>
+          <path d="M11 4.4v2"/>
         </svg>
       )
     default:

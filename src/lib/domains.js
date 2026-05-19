@@ -1,8 +1,8 @@
 // DB values — lowercase, used in all SELECT/INSERT/UPDATE against quill.tasks/quill.projects
-export const DOMAIN_VALUES = ['spirit', 'body', 'work', 'wealth', 'family']
+export const DOMAIN_VALUES = ['spirit', 'body', 'work', 'wealth', 'family', 'home']
 
 // Invariant ordering — every domain-aware UI loops in this order
-export const DOMAIN_ORDER = ['spirit', 'body', 'work', 'wealth', 'family']
+export const DOMAIN_ORDER = ['spirit', 'body', 'work', 'wealth', 'family', 'home']
 
 // Full per-domain record — label, color, tint, edge, glyph key, note
 // Source of truth: design/quill-system.jsx
@@ -12,6 +12,7 @@ export const DOMAINS = {
   work:   { key: 'work',   label: 'Work',   color: '#8B5A3C', tint: '#EFE4D7', edge: '#D9C4AD', glyph: 'work',   note: 'craft · livelihood' },
   wealth: { key: 'wealth', label: 'Wealth', color: '#A57E2A', tint: '#F0E8D2', edge: '#DBC994', glyph: 'wealth', note: 'money · stewardship' },
   family: { key: 'family', label: 'Family', color: '#6E3F4A', tint: '#EDE0E2', edge: '#D2B9BE', glyph: 'family', note: 'hearth · relationships' },
+  home:   { key: 'home',   label: 'Home',   color: '#5C6B6B', tint: '#E5E7E7', edge: '#C5CACA', glyph: 'home',   note: 'household · property' },
 }
 
 // Display labels — what users see in the UI
@@ -21,6 +22,7 @@ export const DOMAIN_DISPLAY_LABEL = {
   work:   'Work',
   wealth: 'Wealth',
   family: 'Family',
+  home:   'Home',
 }
 
 export function displayDomain(value) {
