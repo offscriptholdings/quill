@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useModal } from '../context/ModalContext'
 import { parseInput } from '../lib/parser'
+import { DOMAIN_ORDER } from '../lib/domains'
 import Icon from './Icon'
 import DomainChip from './DomainChip'
 
@@ -39,6 +40,7 @@ export default function CaptureSheet() {
   const [submitting, setSubmitting] = useState(false)
   const [allProjects, setAllProjects] = useState([])
   const [openTasks, setOpenTasks] = useState([])
+  const [domainPickerOpen, setDomainPickerOpen] = useState(false)
 
   const sheetRef = useRef(null)
 
@@ -333,7 +335,7 @@ export default function CaptureSheet() {
                 @{projectName}
               </Chip>
             )}
-            <DomainChip domain={domain} onPress={() => {}} />
+            <DomainChip domain={domain} onPress={() => setDomainPickerOpen((v) => !v)} />
             {scheduleDate && (
               <Chip
                 onClear={() => {
@@ -353,13 +355,29 @@ export default function CaptureSheet() {
             )}
           </div>
         )}
+        {domainPickerOpen && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 0 8px' }}>
+            {DOMAIN_ORDER.map((d) => (
+              <DomainChip
+                key={d}
+                domain={d}
+                onPress={() => {
+                  setDomain(d)
+                  setDomainPickerOpen(false)
+                }}
+              />
+            ))}
+          </div>
+        )}
         {!title && (
-          <div style={{ padding: '10px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            <HintChip>@project</HintChip>
-            <HintChip>#domain</HintChip>
-            <HintChip>today</HintChip>
-            <HintChip>!!</HintChip>
-            <HintChip>^waits-on</HintChip>
+          <div style={{ padding: '10px 0', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <SyntaxHint>type</SyntaxHint>
+            <SyntaxHint mono>@project</SyntaxHint>
+            <SyntaxHint mono>#domain</SyntaxHint>
+            <SyntaxHint mono>today</SyntaxHint>
+            <SyntaxHint mono>!!</SyntaxHint>
+            <SyntaxHint mono>^waits-on</SyntaxHint>
+            <SyntaxHint>in title to auto-fill</SyntaxHint>
           </div>
         )}
         {!title && !editing && recents.length > 0 && (
@@ -436,20 +454,19 @@ function Chip({ children, onClear }) {
   )
 }
 
-function HintChip({ children }) {
+function SyntaxHint({ children, mono = false }) {
   return (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        padding: '3px 8px',
-        borderRadius: 12,
-        background: 'transparent',
-        boxShadow: 'inset 0 0 0 0.5px #E5DCC6',
-        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+        fontFamily: mono
+          ? '"IBM Plex Mono", ui-monospace, monospace'
+          : '"IBM Plex Sans", system-ui, sans-serif',
         fontSize: 10,
         color: '#948A78',
-        letterSpacing: '0.04em',
+        letterSpacing: mono ? '0.04em' : 0,
+        fontStyle: mono ? 'normal' : 'italic',
       }}
     >
       {children}

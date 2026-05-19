@@ -31,13 +31,23 @@ export default function MenuTab() {
         ))}
       </div>
       <SectionHeader label="Library" />
-      <div style={{ padding: '4px 16px 16px' }}>
+      <div style={{ padding: '4px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          onClick={() => navigate('/menu/everything')}
+          style={{
+            background: 'none', border: 0, padding: 0, cursor: 'pointer',
+            fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+            fontSize: 14, color: '#1F1D18', textAlign: 'left',
+          }}
+        >
+          Everything →
+        </button>
         <button
           onClick={() => navigate('/menu/logbook')}
           style={{
             background: 'none', border: 0, padding: 0, cursor: 'pointer',
             fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
-            fontSize: 14, color: '#1F1D18',
+            fontSize: 14, color: '#1F1D18', textAlign: 'left',
           }}
         >
           Logbook →

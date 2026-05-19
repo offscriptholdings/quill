@@ -10,6 +10,7 @@ import ProjectsTab from './tabs/ProjectsTab';
 import SomedayTab from './tabs/SomedayTab';
 import MenuTab from './tabs/MenuTab';
 import LogbookTab from './tabs/LogbookTab';
+import EverythingScreen from './tabs/EverythingScreen';
 import DomainScreen from './tabs/DomainScreen';
 import TaskDetailScreen from './tabs/TaskDetailScreen';
 import CrucibleCaptureScreen from './tabs/CrucibleCaptureScreen';
@@ -41,8 +42,9 @@ export default function App() {
               <Route path="/today"          element={<TodayTab />} />
               <Route path="/projects"       element={<ProjectsTab />} />
               <Route path="/someday"        element={<SomedayTab />} />
-              <Route path="/menu"           element={<MenuTab />} />
-              <Route path="/menu/logbook"   element={<LogbookTab />} />
+              <Route path="/menu"             element={<MenuTab />} />
+              <Route path="/menu/everything"  element={<EverythingScreen />} />
+              <Route path="/menu/logbook"     element={<LogbookTab />} />
               <Route path="/domain/:slug"   element={<DomainScreen />} />
               <Route path="/task/:id"       element={<TaskDetailScreen />} />
               <Route path="/inbox"          element={<CrucibleCaptureScreen />} />
