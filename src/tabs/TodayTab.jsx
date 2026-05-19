@@ -137,6 +137,16 @@ export default function TodayTab() {
   }
   const orderedDomains = DOMAIN_ORDER.filter((d) => groups[d]?.length > 0);
 
+  const flatSorted = filter === 'time'
+    ? [...visibleTasks].sort((a, b) => {
+        const aTimed = !!a.scheduled, bTimed = !!b.scheduled;
+        if (aTimed && bTimed) return new Date(a.scheduled) - new Date(b.scheduled);
+        if (aTimed) return -1;
+        if (bTimed) return 1;
+        return (b.priority ?? 1) - (a.priority ?? 1);
+      })
+    : [];
+
   const openTotal = visibleTasks.length;
   const blockedTotal = visibleTasks.filter((t) => blockedIds.has(t.id)).length;
   const tallyVisible = filter !== 'trips';
@@ -157,6 +167,7 @@ export default function TodayTab() {
     { id: 'tasks', label: 'Tasks' },
     { id: 'meetings', label: 'Meetings' },
     { id: 'trips', label: 'Trips' },
+    { id: 'time', label: 'By Time' },
   ];
 
   return (
@@ -206,7 +217,7 @@ export default function TodayTab() {
           <TallyItem dotColor={COLOR.ink3}   count={blockedTotal} label="blocked" />
           <TallyItem dotColor={COLOR.ink}    count={doneCount} label="done" />
           <span style={{ flex: 1 }} />
-          <span style={{ color: COLOR.ink3 }}>by domain</span>
+          <span style={{ color: COLOR.ink3 }}>{filter === 'time' ? 'by time' : 'by domain'}</span>
         </div>
       )}
 
@@ -267,7 +278,7 @@ export default function TodayTab() {
         </div>
       )}
 
-      {orderedDomains.map((k) => {
+      {filter !== 'time' && orderedDomains.map((k) => {
         const d = DOMAINS[k];
         const tasks = groups[k];
         return (
@@ -288,6 +299,21 @@ export default function TodayTab() {
           </div>
         );
       })}
+
+      {filter === 'time' && flatSorted.length > 0 && (
+        <div style={{ background: COLOR.paper, margin: '0 16px', borderRadius: 3, boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}` }}>
+          {flatSorted.map((t, i) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              showDomain={true}
+              noRule={i === flatSorted.length - 1}
+              onComplete={handleComplete}
+              onUndo={handleUndo}
+            />
+          ))}
+        </div>
+      )}
 
       <AddTaskFAB defaultValues={{ schedule_date: localTodayIso() }} onSaved={fetchAll} />
     </div>
