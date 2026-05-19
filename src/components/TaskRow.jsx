@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 import { DOMAINS } from '../lib/domains';
-import { localTodayIso, addDaysIso } from '../lib/date';
+import { localTodayIso, addDaysIso, formatLocalTime } from '../lib/date';
 import { useTaskState } from '../hooks/useTaskState';
 import { useTaskComplete } from '../hooks/useTaskComplete';
 import TaskCheck from './TaskCheck';
@@ -234,12 +234,26 @@ export default function TaskRow({
             textDecoration: dim ? 'line-through' : 'none',
             textDecorationColor: COLOR.ink3,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{task.title}</div>
+          }}>
+            {(task.kind === 'meeting' || task.kind === 'appointment') && task.scheduled && (
+              <>
+                <span style={{
+                  fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                  fontWeight: 600, color: dim ? COLOR.ink3 : COLOR.ink2,
+                }}>
+                  {formatLocalTime(task.scheduled)}
+                </span>
+                <span style={{ color: COLOR.ink3 }}> — </span>
+              </>
+            )}
+            {task.title}
+          </div>
           <MetaLine
             d={d}
             showDomain={showDomain}
             project={task.projects?.name}
             dateLabel={formatDateLabel(task)}
+            location={task.location}
             blockedBy={null}
             unblocks={null}
           />
@@ -255,8 +269,8 @@ export default function TaskRow({
   );
 }
 
-function MetaLine({ d, showDomain, project, dateLabel, blockedBy, unblocks }) {
-  if (!d && !project && !dateLabel && !blockedBy && !unblocks) return null;
+function MetaLine({ d, showDomain, project, dateLabel, location, blockedBy, unblocks }) {
+  if (!d && !project && !dateLabel && !location && !blockedBy && !unblocks) return null;
   return (
     <div style={{
       marginTop: 3, display: 'flex', alignItems: 'center', gap: 8,
@@ -277,6 +291,12 @@ function MetaLine({ d, showDomain, project, dateLabel, blockedBy, unblocks }) {
       {dateLabel && (
         <span style={{ color: dateLabel.tone === 'rubric' ? COLOR.rubric : COLOR.ink2 }}>
           {dateLabel.text}
+        </span>
+      )}
+      {location && (dateLabel || project || d) && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {location && (
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140, textTransform: 'none', letterSpacing: 0, fontWeight: 450, color: COLOR.ink2 }}>
+          @ {location}
         </span>
       )}
       {blockedBy && <span style={{ color: COLOR.ink3 }}>·</span>}

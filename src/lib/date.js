@@ -15,3 +15,13 @@ export function addDaysIso(iso, n) {
   d.setDate(d.getDate() + n);
   return localDateIso(d);
 }
+
+// Format an ISO timestamp as a short manuscript-style local time: "9:00a" / "2:30p".
+export function formatLocalTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d
+    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(' AM', 'a')
+    .replace(' PM', 'p');
+}
