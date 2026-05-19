@@ -57,10 +57,14 @@ export default function TodayTab() {
       const todayIso = localTodayIso();
       const tomorrowIso = addDaysIso(todayIso, 1);
 
-      const [openRes, blockedRes, doneRes] = await Promise.all([
+      const [openByDateRes, openByTimeRes, blockedRes, doneRes] = await Promise.all([
         supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
           .eq('status', 'open')
           .or(`schedule_date.eq.${todayIso},and(due_date.not.is.null,due_date.lte.${todayIso})`),
+        supabase.schema('quill').from('tasks').select('*, projects!project_id(name)')
+          .eq('status', 'open')
+          .gte('scheduled', `${todayIso}T00:00:00`)
+          .lt('scheduled', `${tomorrowIso}T00:00:00`),
         supabase.schema('quill').from('tasks_blocked').select('id'),
         supabase.schema('quill').from('tasks').select('id', { count: 'exact', head: true })
           .eq('status', 'done')
@@ -68,11 +72,15 @@ export default function TodayTab() {
           .lt('completed_at', tomorrowIso),
       ]);
 
-      if (openRes.error) throw openRes.error;
+      if (openByDateRes.error) throw openByDateRes.error;
+      if (openByTimeRes.error) throw openByTimeRes.error;
       if (blockedRes.error) throw blockedRes.error;
       if (doneRes.error) throw doneRes.error;
 
-      setOpenTasks(openRes.data ?? []);
+      const mergedById = new Map();
+      for (const t of openByDateRes.data ?? []) mergedById.set(t.id, t);
+      for (const t of openByTimeRes.data ?? []) mergedById.set(t.id, t);
+      setOpenTasks(Array.from(mergedById.values()));
       setBlockedIds(new Set((blockedRes.data ?? []).map((r) => r.id)));
       setDoneCount(doneRes.count ?? 0);
     } catch (e) {
@@ -99,7 +107,13 @@ export default function TodayTab() {
     groups[t.domain].push(t);
   }
   for (const k of Object.keys(groups)) {
-    groups[k].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1));
+    groups[k].sort((a, b) => {
+      const aTimed = !!a.scheduled, bTimed = !!b.scheduled;
+      if (aTimed && bTimed) return new Date(a.scheduled) - new Date(b.scheduled);
+      if (aTimed) return -1;
+      if (bTimed) return 1;
+      return (b.priority ?? 1) - (a.priority ?? 1);
+    });
   }
   const orderedDomains = DOMAIN_ORDER.filter((d) => groups[d]?.length > 0);
 

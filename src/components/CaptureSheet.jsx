@@ -65,6 +65,8 @@ export default function CaptureSheet() {
   const [allProjects, setAllProjects] = useState([])
   const [openTasks, setOpenTasks] = useState([])
   const [domainPickerOpen, setDomainPickerOpen] = useState(false)
+  const [kind, setKind] = useState('task')
+  const [location, setLocation] = useState('')
 
   const sheetRef = useRef(null)
 
@@ -81,6 +83,8 @@ export default function CaptureSheet() {
     setWaitsOn(null)
     setSubmitting(false)
     setParseResult({ cleanedTitle: '', tokens: [], resolved: {} })
+    setKind(t.kind ?? 'task')
+    setLocation(t.location ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, modalState.task])
 
@@ -125,15 +129,19 @@ export default function CaptureSheet() {
     }
   }, [title, allProjects, openTasks])
 
+  const isTimed = kind === 'meeting' || kind === 'appointment'
+
   const handleSubmit = useCallback(async () => {
     const finalTitle = (parseResult.cleanedTitle || title).trim()
     if (!finalTitle) return
     if (isCrucible && (!domain || !scheduleDate)) return
+    if (isTimed && (!scheduleDate || !scheduledTime)) return
     setSubmitting(true)
     const payload = {
       title: finalTitle,
       domain,
       priority,
+      kind,
       schedule_date: scheduleDate,
       scheduled:
         scheduleDate && scheduledTime
@@ -143,6 +151,7 @@ export default function CaptureSheet() {
       source: isCrucible ? 'crucible' : 'manual',
       status: 'open',
     }
+    payload.location = isTimed && location.trim() ? location.trim() : null
     let savedRow
     if (editing) {
       const { data } = await supabase
@@ -201,6 +210,10 @@ export default function CaptureSheet() {
     crucibleData,
     modalState,
     closeTaskModal,
+    kind,
+    location,
+    isTimed,
+    showToast,
   ])
 
   const handleSkip = useCallback(async () => {
@@ -320,20 +333,53 @@ export default function CaptureSheet() {
             disabled={
               submitting ||
               !title.trim() ||
-              (isCrucible && (!domain || !scheduleDate))
+              (isCrucible && (!domain || !scheduleDate)) ||
+              (isTimed && (!scheduleDate || !scheduledTime))
             }
             style={{
               ...btnPillStyle(COLOR.ink, COLOR.linen),
               opacity:
                 submitting ||
                 !title.trim() ||
-                (isCrucible && (!domain || !scheduleDate))
+                (isCrucible && (!domain || !scheduleDate)) ||
+                (isTimed && (!scheduleDate || !scheduledTime))
                   ? 0.5
                   : 1,
             }}
           >
             {editing ? 'Save' : 'Inscribe'}
           </button>
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+          {[
+            { value: 'task', label: 'Task' },
+            { value: 'meeting', label: 'Meeting' },
+            { value: 'appointment', label: 'Appointment' },
+          ].map((opt) => {
+            const selected = kind === opt.value
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setKind(opt.value)}
+                style={{
+                  padding: '4px 12px',
+                  height: 26,
+                  borderRadius: 15,
+                  background: selected ? COLOR.ink : COLOR.paper,
+                  color: selected ? COLOR.linen : COLOR.ink,
+                  boxShadow: selected ? 'none' : `inset 0 0 0 0.5px ${COLOR.rule}`,
+                  border: 0,
+                  fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
         </div>
         <textarea
           autoFocus
@@ -354,6 +400,52 @@ export default function CaptureSheet() {
             fontStyle: title ? 'normal' : 'italic',
           }}
         />
+        {isTimed && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0 10px' }}>
+            <span style={{
+              fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+              fontSize: 10, fontWeight: 600, color: COLOR.ink3,
+              letterSpacing: '0.07em', textTransform: 'uppercase',
+            }}>
+              Time
+            </span>
+            <input
+              type="time"
+              value={scheduledTime ?? ''}
+              onChange={(e) => setScheduledTime(e.target.value || null)}
+              disabled={!scheduleDate}
+              style={{
+                width: 140,
+                padding: '6px 10px',
+                border: `0.5px solid ${COLOR.rule}`,
+                borderRadius: 3,
+                background: scheduleDate ? COLOR.paper : COLOR.linen,
+                color: scheduleDate ? COLOR.ink : COLOR.ink3,
+                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontSize: 13,
+                outline: 'none',
+              }}
+            />
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Location (optional)"
+              style={{
+                width: '100%',
+                marginTop: 4,
+                padding: '6px 10px',
+                border: `0.5px solid ${COLOR.rule}`,
+                borderRadius: 3,
+                background: COLOR.paper,
+                color: COLOR.ink,
+                fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+                fontSize: 13,
+                outline: 'none',
+              }}
+            />
+          </div>
+        )}
         {(projectName || domain || scheduleDate || priority > 0 || waitsOn) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0' }}>
             {projectName && (
