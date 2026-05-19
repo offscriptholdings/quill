@@ -19,16 +19,38 @@ const COLOR = {
   rubric:    '#8E3A1A',
 };
 
-function formatDue(dateStr) {
-  if (!dateStr) return null;
+function shortDate(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Returns { text, tone } | null
+// Priority: Overdue → Due today → Do on (future schedule_date) → Due (future due_date)
+// "Do on" pops first; on the due_date it becomes "Due"; after, "Overdue".
+function formatDateLabel(task) {
+  if (!task) return null;
   const today = localTodayIso();
   const tomorrow = addDaysIso(today, 1);
-  if (dateStr === today) return 'due today';
-  if (dateStr === tomorrow) return 'due tomorrow';
-  const isPast = dateStr < today;
-  const d = new Date(dateStr + 'T00:00:00');
-  const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return isPast ? 'overdue' : `due ${label}`;
+
+  // 1. Overdue — due_date in the past + still open
+  if (task.due_date && task.due_date < today && task.status === 'open') {
+    return { text: 'overdue', tone: 'rubric' };
+  }
+  // 2. Due today
+  if (task.due_date === today) {
+    return { text: 'due today', tone: 'rubric' };
+  }
+  // 3. Do on (schedule_date in future) — pops before due_date label kicks in
+  if (task.schedule_date && task.schedule_date > today) {
+    if (task.schedule_date === tomorrow) return { text: 'do on tomorrow', tone: 'ink2' };
+    return { text: `do on ${shortDate(task.schedule_date)}`, tone: 'ink2' };
+  }
+  // 4. Future due_date (schedule_date already passed or absent)
+  if (task.due_date && task.due_date > today) {
+    if (task.due_date === tomorrow) return { text: 'due tomorrow', tone: 'ink2' };
+    return { text: `due ${shortDate(task.due_date)}`, tone: 'ink2' };
+  }
+  return null;
 }
 
 /**
@@ -217,7 +239,7 @@ export default function TaskRow({
             d={d}
             showDomain={showDomain}
             project={task.projects?.name}
-            due={formatDue(task.due_date)}
+            dateLabel={formatDateLabel(task)}
             blockedBy={null}
             unblocks={null}
           />
@@ -233,8 +255,8 @@ export default function TaskRow({
   );
 }
 
-function MetaLine({ d, showDomain, project, due, blockedBy, unblocks }) {
-  if (!d && !project && !due && !blockedBy && !unblocks) return null;
+function MetaLine({ d, showDomain, project, dateLabel, blockedBy, unblocks }) {
+  if (!d && !project && !dateLabel && !blockedBy && !unblocks) return null;
   return (
     <div style={{
       marginTop: 3, display: 'flex', alignItems: 'center', gap: 8,
@@ -251,8 +273,12 @@ function MetaLine({ d, showDomain, project, due, blockedBy, unblocks }) {
       )}
       {project && d && <span style={{ color: COLOR.ink3 }}>·</span>}
       {project && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120, textTransform: 'none', letterSpacing: 0, fontWeight: 450 }}>{project}</span>}
-      {due && (project || d) && <span style={{ color: COLOR.ink3 }}>·</span>}
-      {due && <span style={{ color: due === 'overdue' ? COLOR.rubric : COLOR.ink2 }}>{due}</span>}
+      {dateLabel && (project || d) && <span style={{ color: COLOR.ink3 }}>·</span>}
+      {dateLabel && (
+        <span style={{ color: dateLabel.tone === 'rubric' ? COLOR.rubric : COLOR.ink2 }}>
+          {dateLabel.text}
+        </span>
+      )}
       {blockedBy && <span style={{ color: COLOR.ink3 }}>·</span>}
       {blockedBy && (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: COLOR.ink3 }}>

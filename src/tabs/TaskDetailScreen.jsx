@@ -138,6 +138,18 @@ export default function TaskDetailScreen() {
       </div>
 
       <div style={{ background: COLOR.paper, margin: '0 16px 16px', borderRadius: 3, boxShadow: `inset 0 0 0 0.5px ${COLOR.rule}` }}>
+        <Row label="DO ON">
+          <input
+            type="date"
+            value={task.schedule_date ?? ''}
+            onChange={async (e) => {
+              const v = e.target.value || null;
+              await supabase.schema('quill').from('tasks').update({ schedule_date: v }).eq('id', task.id);
+              setTask((t) => ({ ...t, schedule_date: v }));
+            }}
+            style={{ background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.ink, textAlign: 'right' }}
+          />
+        </Row>
         <Row label="DUE">
           <input
             type="date"
@@ -151,9 +163,27 @@ export default function TaskDetailScreen() {
           />
         </Row>
         <Row label="REPEAT">
-          <span style={{ fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: task.is_recurring ? COLOR.ink : COLOR.ink3 }}>
-            {task.is_recurring ? (task.rrule ?? 'Recurring') : 'Never'}
-          </span>
+          <select
+            value={task.is_recurring ? (task.rrule ?? 'CUSTOM') : 'NONE'}
+            onChange={async (e) => {
+              const v = e.target.value;
+              const is_recurring = v !== 'NONE';
+              const rrule = is_recurring ? v : null;
+              await supabase.schema('quill').from('tasks').update({ is_recurring, rrule }).eq('id', task.id);
+              setTask((t) => ({ ...t, is_recurring, rrule }));
+            }}
+            style={{ background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: task.is_recurring ? COLOR.ink : COLOR.ink3, textAlign: 'right', appearance: 'none', cursor: 'pointer' }}
+          >
+            <option value="NONE">Never</option>
+            <option value="FREQ=DAILY">Daily</option>
+            <option value="FREQ=WEEKLY">Weekly</option>
+            <option value="FREQ=WEEKLY;INTERVAL=2">Biweekly</option>
+            <option value="FREQ=MONTHLY">Monthly</option>
+            <option value="FREQ=YEARLY">Yearly</option>
+            {task.is_recurring && task.rrule && !['FREQ=DAILY','FREQ=WEEKLY','FREQ=WEEKLY;INTERVAL=2','FREQ=MONTHLY','FREQ=YEARLY'].includes(task.rrule) && (
+              <option value={task.rrule}>{task.rrule}</option>
+            )}
+          </select>
         </Row>
         <Row label="PROJECT">
           {projectId ? (
