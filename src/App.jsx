@@ -43,7 +43,8 @@ export default function App() {
               <Route path="/projects"       element={<ProjectsTab />} />
               <Route path="/someday"        element={<SomedayTab />} />
               <Route path="/menu"             element={<MenuTab />} />
-              <Route path="/menu/everything"  element={<EverythingScreen />} />
+              <Route path="/everything"       element={<EverythingScreen />} />
+              <Route path="/menu/everything"  element={<Navigate to="/everything" replace />} />
               <Route path="/menu/logbook"     element={<LogbookTab />} />
               <Route path="/domain/:slug"   element={<DomainScreen />} />
               <Route path="/task/:id"       element={<TaskDetailScreen />} />
