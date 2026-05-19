@@ -8,6 +8,12 @@ import Icon from '../components/Icon';
 
 const COLOR = { ink:'#1F1D18', ink2:'#5C5448', ink3:'#948A78', linen:'#F2EDE3', paper:'#FAF6EC', rule:'#D9CFB8', ruleSoft:'#E5DCC6', rubric:'#8E3A1A' };
 
+function extractTimeHHMM(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function TaskDetailScreen() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,6 +23,7 @@ export default function TaskDetailScreen() {
   const [unblocks, setUnblocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
+  const [location, setLocation] = useState('');
   const [pickerOpen, setPickerOpen] = useState(null);
   const [domainPickerOpen, setDomainPickerOpen] = useState(false);
 
@@ -35,6 +42,7 @@ export default function TaskDetailScreen() {
     ]);
     setTask(taskRes.data ?? null);
     setNotes(taskRes.data?.notes ?? '');
+    setLocation(taskRes.data?.location ?? '');
     setWaitingOn((depsRes.data ?? []).map((r) => r.depends_on).filter(Boolean));
     setUnblocks((unblocksRes.data ?? []).map((r) => r.waiter).filter(Boolean));
     setLoading(false);
@@ -163,10 +171,11 @@ export default function TaskDetailScreen() {
             style={{ background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.ink, textAlign: 'right' }}
           />
         </Row>
-        <Row label="DUE">
+        <Row label={task.kind === 'trip' ? 'END DATE' : 'DUE'}>
           <input
             type="date"
             value={task.due_date ?? ''}
+            min={task.kind === 'trip' ? (task.schedule_date ?? undefined) : undefined}
             onChange={async (e) => {
               const v = e.target.value || null;
               await supabase.schema('quill').from('tasks').update({ due_date: v }).eq('id', task.id);
@@ -214,6 +223,77 @@ export default function TaskDetailScreen() {
             <option value="3">Urgent</option>
           </select>
         </Row>
+        <Row label="KIND">
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {['task','meeting','appointment','trip'].map((k) => {
+              const on = (task.kind ?? 'task') === k;
+              return (
+                <button
+                  key={k}
+                  onClick={async () => {
+                    await supabase.schema('quill').from('tasks').update({ kind: k }).eq('id', task.id);
+                    setTask((t) => ({ ...t, kind: k }));
+                  }}
+                  style={{
+                    background: on ? COLOR.ink : COLOR.paper,
+                    color: on ? COLOR.paper : COLOR.ink2,
+                    border: `0.5px solid ${on ? COLOR.ink : COLOR.rule}`,
+                    borderRadius: 15,
+                    padding: '5px 14px',
+                    fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+                    fontSize: 12,
+                    fontWeight: on ? 600 : 500,
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {k}
+                </button>
+              );
+            })}
+          </div>
+        </Row>
+        {(task.kind === 'meeting' || task.kind === 'appointment') && (
+          <Row label="TIME">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+              {!task.schedule_date && (
+                <span style={{ fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 12, fontStyle: 'italic', color: COLOR.ink3 }}>
+                  set a date first
+                </span>
+              )}
+              <input
+                type="time"
+                value={extractTimeHHMM(task.scheduled)}
+                disabled={!task.schedule_date}
+                onChange={async (e) => {
+                  const time = e.target.value;
+                  if (!task.schedule_date || !time) return;
+                  const newScheduled = new Date(`${task.schedule_date}T${time}:00`).toISOString();
+                  await supabase.schema('quill').from('tasks').update({ scheduled: newScheduled }).eq('id', task.id);
+                  setTask((t) => ({ ...t, scheduled: newScheduled }));
+                }}
+                style={{ background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: task.schedule_date ? COLOR.ink : COLOR.ink3, textAlign: 'right' }}
+              />
+            </span>
+          </Row>
+        )}
+        {['meeting','appointment','trip'].includes(task.kind ?? '') && (
+          <Row label="LOCATION">
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onBlur={async () => {
+                const v = location.trim() || null;
+                if (v === (task.location ?? null)) return;
+                await supabase.schema('quill').from('tasks').update({ location: v }).eq('id', task.id);
+                setTask((t) => ({ ...t, location: v }));
+              }}
+              placeholder="Optional"
+              style={{ width: '100%', background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.ink, textAlign: 'right' }}
+            />
+          </Row>
+        )}
         <Row label="PROJECT">
           {projectId ? (
             <button onClick={() => navigate(`/projects`)} style={btnTextStyle(COLOR.ink)}>{projectName}</button>
