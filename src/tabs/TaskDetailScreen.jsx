@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { DOMAINS } from '../lib/domains';
+import { DOMAINS, DOMAIN_ORDER } from '../lib/domains';
 import DomainChip from '../components/DomainChip';
 import TaskRow from '../components/TaskRow';
 import Icon from '../components/Icon';
@@ -18,6 +18,7 @@ export default function TaskDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState('');
   const [pickerOpen, setPickerOpen] = useState(null);
+  const [domainPickerOpen, setDomainPickerOpen] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!id) return;
@@ -96,23 +97,35 @@ export default function TaskDetailScreen() {
             {projectName ?? 'Tasks'}
           </span>
         </button>
-        <span style={{ flex: 1 }} />
-        <button
-          onClick={() => openTaskModal(task, { onSaved: fetchAll })}
-          style={{ background:'none', border:0, padding:'4px 8px', cursor:'pointer', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.rubric, fontWeight: 600 }}
-        >
-          Edit
-        </button>
       </div>
 
-      <div style={{ padding: '6px 16px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <DomainChip domain={task.domain} />
+      <div style={{ padding: '6px 16px 14px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <DomainChip
+          domain={task.domain}
+          onPress={() => setDomainPickerOpen((v) => !v)}
+        />
         {task.due_date && (
           <span style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 10, fontWeight: 600, color: COLOR.ink3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             Due {formatDate(task.due_date)}
           </span>
         )}
       </div>
+
+      {domainPickerOpen && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 16px 14px' }}>
+          {DOMAIN_ORDER.map((d) => (
+            <DomainChip
+              key={d}
+              domain={d}
+              onPress={async () => {
+                await supabase.schema('quill').from('tasks').update({ domain: d }).eq('id', task.id);
+                setTask((t) => ({ ...t, domain: d }));
+                setDomainPickerOpen(false);
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <div style={{ padding: '0 16px 12px' }}>
         <h1 style={{ fontFamily: 'Newsreader, serif', fontSize: 28, lineHeight: '34px', color: COLOR.ink, fontWeight: 500, margin: 0, letterSpacing: '-0.3px' }}>
@@ -183,6 +196,22 @@ export default function TaskDetailScreen() {
             {task.is_recurring && task.rrule && !['FREQ=DAILY','FREQ=WEEKLY','FREQ=WEEKLY;INTERVAL=2','FREQ=MONTHLY','FREQ=YEARLY'].includes(task.rrule) && (
               <option value={task.rrule}>{task.rrule}</option>
             )}
+          </select>
+        </Row>
+        <Row label="PRIORITY">
+          <select
+            value={String(task.priority ?? 1)}
+            onChange={async (e) => {
+              const p = parseInt(e.target.value, 10);
+              await supabase.schema('quill').from('tasks').update({ priority: p }).eq('id', task.id);
+              setTask((t) => ({ ...t, priority: p }));
+            }}
+            style={{ background: 'transparent', border: 0, outline: 'none', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.ink, textAlign: 'right', appearance: 'none', cursor: 'pointer' }}
+          >
+            <option value="0">Low</option>
+            <option value="1">Normal</option>
+            <option value="2">High</option>
+            <option value="3">Urgent</option>
           </select>
         </Row>
         <Row label="PROJECT">
