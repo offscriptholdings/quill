@@ -1,10 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useModal } from '../context/ModalContext'
+import { useToast } from '../context/ToastContext'
 import { parseInput } from '../lib/parser'
-import { DOMAIN_ORDER } from '../lib/domains'
+import { DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import { localTodayIso, addDaysIso } from '../lib/date'
 import Icon from './Icon'
 import DomainChip from './DomainChip'
+
+function formatDestination(task) {
+  const domainLabel = DOMAIN_DISPLAY_LABEL[task?.domain] ?? task?.domain ?? '—'
+  let when
+  if (task?.schedule_date) {
+    const today = localTodayIso()
+    const tomorrow = addDaysIso(today, 1)
+    if (task.schedule_date === today) when = 'Today'
+    else if (task.schedule_date === tomorrow) when = 'Tomorrow'
+    else {
+      const d = new Date(`${task.schedule_date}T12:00:00`)
+      when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+  } else if (task?.due_date) {
+    const d = new Date(`${task.due_date}T12:00:00`)
+    when = `Due ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  } else {
+    when = 'Someday'
+  }
+  return `${domainLabel} · ${when}`
+}
 
 const COLOR = {
   ink: '#1F1D18',
@@ -21,6 +44,7 @@ const SCRIM = 'rgba(31,29,24,0.32)'
 
 export default function CaptureSheet() {
   const { modalState, closeTaskModal } = useModal()
+  const { showToast } = useToast()
   const open = modalState.open
   const editing = !!modalState.task?.id
   const defaults = modalState.task ?? {}
@@ -158,6 +182,10 @@ export default function CaptureSheet() {
         .eq('id', crucibleData.inbox_id)
     }
     modalState.onSaved?.(savedRow, editing ? 'update' : 'create')
+    if (savedRow && !isCrucible) {
+      const verb = editing ? 'Updated' : 'Captured'
+      showToast({ message: `${verb} → ${formatDestination(savedRow)}` })
+    }
     closeTaskModal()
   }, [
     title,
