@@ -5,14 +5,6 @@ import Icon from './Icon'
 
 const STATUSES = ['active', 'waiting', 'complete', 'archived']
 
-const DOMAIN_COLORS = {
-  spirit: '#C4A962',
-  body:   '#7EA87E',
-  work:   '#6B8CAE',
-  wealth: '#C49A45',
-  family: '#B8848A',
-}
-
 const empty = { name: '', description: '', domain: 'work', goal: '', status: 'active' }
 
 export default function ProjectModal({ open, project, onClose, onSaved }) {
@@ -125,15 +117,15 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
           <div>
             <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Domain</label>
             <div className="flex gap-2 flex-wrap">
-              {DOMAINS.map(d => (
+              {DOMAIN_VALUES.map(d => (
                 <button
                   key={d}
                   onClick={() => set('domain', d)}
                   className="px-3 py-1.5 rounded-full font-mono text-xs transition-all"
                   style={{
-                    background: form.domain === d ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                    border: `1px solid ${form.domain === d ? DOMAIN_COLORS[d] : '#2A2824'}`,
-                    color: form.domain === d ? DOMAIN_COLORS[d] : '#9A9187',
+                    background: form.domain === d ? DOMAINS[d]?.color + '33' : 'transparent',
+                    border: `1px solid ${form.domain === d ? DOMAINS[d]?.color : '#2A2824'}`,
+                    color: form.domain === d ? DOMAINS[d]?.color : '#9A9187',
                     minHeight: 36,
                   }}
                 >

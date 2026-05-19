@@ -139,10 +139,13 @@ export default function CaptureSheet() {
       savedRow = data
     }
     if (waitsOn && savedRow && !editing) {
-      await supabase.schema('quill').from('dependencies').insert({
+      const { error: depErr } = await supabase.schema('quill').from('dependencies').insert({
         task_id: savedRow.id,
         depends_on_task_id: waitsOn.id,
       })
+      if (depErr && depErr.code !== '23505') {
+        console.warn('waits-on link failed', depErr)
+      }
     }
     if (isCrucible && savedRow) {
       await supabase

@@ -1,23 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
-import { localTodayIso } from '../lib/date'
+import { DOMAIN_VALUES as DOMAIN_ORDER, DOMAIN_DISPLAY_LABEL, DOMAINS } from '../lib/domains'
+import { localTodayIso, addDaysIso } from '../lib/date'
 import Icon from '../components/Icon'
 
-const DOMAIN_COLORS = {
-  spirit: '#C4A962',
-  body:   '#7EA87E',
-  work:   '#6B8CAE',
-  wealth: '#C49A45',
-  family: '#B8848A',
-}
-
-function addDays(isoDate, n) {
-  const d = new Date(isoDate + 'T00:00:00')
-  d.setDate(d.getDate() + n)
-  return d.toISOString().split('T')[0]
-}
+const addDays = addDaysIso
 
 function dayLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -26,7 +14,7 @@ function dayLabel(dateStr) {
 
 function CompletedTaskRow({ task }) {
   const [expanded, setExpanded] = useState(false)
-  const domainColor = DOMAIN_COLORS[task.domain] ?? '#9A9187'
+  const domainColor = DOMAINS[task.domain]?.color ?? '#9A9187'
 
   return (
     <div className="border-b border-border">
@@ -200,9 +188,9 @@ export default function LogbookTab() {
               onClick={() => setFilterDomain(filterDomain === d ? null : d)}
               className="px-2.5 py-1 rounded-full font-mono text-xs transition-all"
               style={{
-                background: filterDomain === d ? DOMAIN_COLORS[d] + '33' : 'transparent',
-                border: `1px solid ${filterDomain === d ? DOMAIN_COLORS[d] : '#2A2824'}`,
-                color: filterDomain === d ? DOMAIN_COLORS[d] : '#9A9187',
+                background: filterDomain === d ? DOMAINS[d]?.color + '33' : 'transparent',
+                border: `1px solid ${filterDomain === d ? DOMAINS[d]?.color : '#2A2824'}`,
+                color: filterDomain === d ? DOMAINS[d]?.color : '#9A9187',
                 minHeight: 32,
               }}
             >
@@ -235,7 +223,7 @@ export default function LogbookTab() {
           <div className="flex items-center gap-2 mb-2">
             <h2
               className="font-mono text-xs uppercase tracking-widest"
-              style={{ color: DOMAIN_COLORS[domain] }}
+              style={{ color: DOMAINS[domain]?.color }}
             >
               {DOMAIN_DISPLAY_LABEL[domain] ?? domain}
             </h2>

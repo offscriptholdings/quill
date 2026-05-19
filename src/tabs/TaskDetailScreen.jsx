@@ -96,6 +96,13 @@ export default function TaskDetailScreen() {
             {projectName ?? 'Tasks'}
           </span>
         </button>
+        <span style={{ flex: 1 }} />
+        <button
+          onClick={() => openTaskModal(task, { onSaved: fetchAll })}
+          style={{ background:'none', border:0, padding:'4px 8px', cursor:'pointer', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', fontSize: 13, color: COLOR.rubric, fontWeight: 600 }}
+        >
+          Edit
+        </button>
       </div>
 
       <div style={{ padding: '6px 16px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>

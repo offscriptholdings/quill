@@ -18,7 +18,8 @@ export function useTaskComplete() {
       return
     }
 
-    fetch('https://n8n.crucibleos.io/webhook/refresh-brief', { method: 'POST' })
+    fetch('https://n8n.meridiantechco.com/webhook/refresh-brief', { method: 'POST' })
+      .catch((e) => console.warn('brief refresh failed', e))
 
     showToast({
       message: 'Completed',
