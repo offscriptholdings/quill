@@ -1,7 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { DOMAIN_VALUES as DOMAINS, DOMAIN_DISPLAY_LABEL } from '../lib/domains'
+import { DOMAIN_VALUES, DOMAIN_DISPLAY_LABEL, DOMAINS } from '../lib/domains'
 import Icon from './Icon'
+
+const COLOR = {
+  ink:    '#1F1D18',
+  ink2:   '#5C5448',
+  ink3:   '#948A78',
+  linen:  '#F2EDE3',
+  paper:  '#FAF6EC',
+  rule:   '#D9CFB8',
+  ruleSoft: '#E5DCC6',
+  rubric: '#8E3A1A',
+}
+const SCRIM = 'rgba(31,29,24,0.32)'
 
 const STATUSES = ['active', 'waiting', 'complete', 'archived']
 
@@ -61,21 +73,56 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end"
-      style={{ background: 'rgba(0,0,0,0.6)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', alignItems: 'flex-end',
+        background: SCRIM,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full rounded-t-2xl overflow-y-auto"
-        style={{ background: '#161513', borderTop: '1px solid #2A2824', maxHeight: '90dvh' }}
-        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%',
+          background: COLOR.linen,
+          borderTopLeftRadius: 18,
+          borderTopRightRadius: 18,
+          maxHeight: '90dvh',
+          overflowY: 'auto',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
-          <h2 className="font-header text-xl text-ink">{project ? 'Edit Project' : 'New Project'}</h2>
-          <button onClick={onClose} className="text-ink-3 w-11 h-11 flex items-center justify-center" aria-label="Close"><Icon name="x" size={20} /></button>
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 0' }}>
+          <span style={{ width: 36, height: 4, borderRadius: 2, background: COLOR.rule }} />
         </div>
 
-        <div className="px-4 py-4 space-y-4 pb-10">
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 16px 10px',
+          borderBottom: `0.5px solid ${COLOR.rule}`,
+        }}>
+          <span style={{
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: 12, fontWeight: 600,
+            color: COLOR.ink3,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+          }}>
+            {project ? 'Edit project' : 'New project'}
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ background: 'none', border: 0, padding: 4, cursor: 'pointer', color: COLOR.ink3, display: 'inline-flex' }}
+          >
+            <Icon name="x" size={18} sw={1.6} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+
           {/* Name */}
           <div>
             <input
@@ -83,90 +130,167 @@ export default function ProjectModal({ open, project, onClose, onSaved }) {
               type="text"
               placeholder="Project name"
               value={form.name}
-              onChange={e => set('name', e.target.value)}
-              className="w-full bg-transparent text-ink font-task text-xl placeholder-muted border-b border-border py-2 outline-none focus:border-ink transition-colors"
+              onChange={(e) => set('name', e.target.value)}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 0,
+                borderBottom: `1px solid ${COLOR.rule}`,
+                padding: '8px 0',
+                fontFamily: 'Newsreader, serif',
+                fontSize: 22,
+                fontWeight: 500,
+                color: COLOR.ink,
+                outline: 'none',
+              }}
             />
-            {error && <p className="font-mono text-xs mt-1" style={{ color: '#B8848A' }}>{error}</p>}
+            {error && (
+              <p style={{
+                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontSize: 11, color: COLOR.rubric,
+                margin: '6px 0 0',
+              }}>{error}</p>
+            )}
           </div>
 
           {/* Goal */}
-          <div>
-            <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Goal — what done looks like</label>
+          <Field label="Goal — what done looks like">
             <textarea
               placeholder="What does success look like?"
               value={form.goal}
-              onChange={e => set('goal', e.target.value)}
+              onChange={(e) => set('goal', e.target.value)}
               rows={2}
-              className="w-full bg-transparent text-ink font-task text-base placeholder-muted border border-border rounded-lg px-3 py-2 outline-none focus:border-ink resize-none"
+              style={textareaStyle}
             />
-          </div>
+          </Field>
 
           {/* Description */}
-          <div>
-            <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Description (optional)</label>
+          <Field label="Description (optional)">
             <textarea
               placeholder="Context, notes…"
               value={form.description}
-              onChange={e => set('description', e.target.value)}
+              onChange={(e) => set('description', e.target.value)}
               rows={2}
-              className="w-full bg-transparent text-ink font-task text-base placeholder-muted border border-border rounded-lg px-3 py-2 outline-none focus:border-ink resize-none"
+              style={textareaStyle}
             />
-          </div>
+          </Field>
 
           {/* Domain */}
-          <div>
-            <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Domain</label>
-            <div className="flex gap-2 flex-wrap">
-              {DOMAIN_VALUES.map(d => (
-                <button
-                  key={d}
-                  onClick={() => set('domain', d)}
-                  className="px-3 py-1.5 rounded-full font-mono text-xs transition-all"
-                  style={{
-                    background: form.domain === d ? DOMAINS[d]?.color + '33' : 'transparent',
-                    border: `1px solid ${form.domain === d ? DOMAINS[d]?.color : '#2A2824'}`,
-                    color: form.domain === d ? DOMAINS[d]?.color : '#9A9187',
-                    minHeight: 36,
-                  }}
-                >
-                  {DOMAIN_DISPLAY_LABEL[d] ?? d}
-                </button>
-              ))}
+          <Field label="Domain">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {DOMAIN_VALUES.map((d) => {
+                const selected = form.domain === d
+                const c = DOMAINS[d]?.color ?? COLOR.ink3
+                return (
+                  <button
+                    key={d}
+                    onClick={() => set('domain', d)}
+                    style={{
+                      padding: '6px 12px',
+                      minHeight: 32,
+                      borderRadius: 15,
+                      background: selected ? c + '22' : 'transparent',
+                      border: `1px solid ${selected ? c : COLOR.rule}`,
+                      color: selected ? c : COLOR.ink3,
+                      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                      fontSize: 11, fontWeight: 600,
+                      letterSpacing: '0.05em', textTransform: 'uppercase',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {DOMAIN_DISPLAY_LABEL[d] ?? d}
+                  </button>
+                )
+              })}
             </div>
-          </div>
+          </Field>
 
           {/* Status */}
-          <div>
-            <label className="font-mono text-xs text-muted uppercase tracking-wide block mb-2">Status</label>
-            <div className="flex gap-2 flex-wrap">
-              {STATUSES.map(s => (
-                <button
-                  key={s}
-                  onClick={() => set('status', s)}
-                  className="px-3 py-1.5 rounded-lg font-mono text-xs capitalize transition-all"
-                  style={{
-                    background: form.status === s ? '#2A2824' : 'transparent',
-                    border: `1px solid ${form.status === s ? '#9A9187' : '#2A2824'}`,
-                    color: form.status === s ? '#E8E2D9' : '#9A9187',
-                    minHeight: 36,
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
+          <Field label="Status">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {STATUSES.map((s) => {
+                const selected = form.status === s
+                return (
+                  <button
+                    key={s}
+                    onClick={() => set('status', s)}
+                    style={{
+                      padding: '6px 12px',
+                      minHeight: 32,
+                      borderRadius: 8,
+                      background: selected ? COLOR.ink : 'transparent',
+                      border: `1px solid ${selected ? COLOR.ink : COLOR.rule}`,
+                      color: selected ? COLOR.paper : COLOR.ink3,
+                      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                      fontSize: 11, fontWeight: 600,
+                      letterSpacing: '0.05em', textTransform: 'capitalize',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {s}
+                  </button>
+                )
+              })}
             </div>
-          </div>
+          </Field>
 
+          {/* Submit */}
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-3 rounded-xl font-mono text-sm uppercase tracking-wide"
-            style={{ background: '#E8E2D9', color: '#0E0D0B', minHeight: 52, opacity: saving ? 0.6 : 1 }}
+            style={{
+              width: '100%',
+              padding: '14px',
+              marginTop: 4,
+              border: 0,
+              borderRadius: 15,
+              background: COLOR.ink,
+              color: COLOR.paper,
+              fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.05em', textTransform: 'uppercase',
+              cursor: saving ? 'wait' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+              minHeight: 48,
+            }}
           >
-            {saving ? 'Saving…' : project ? 'Save Changes' : 'Create Project'}
+            {saving ? 'Saving…' : project ? 'Save changes' : 'Create project'}
           </button>
         </div>
       </div>
     </div>
   )
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <div style={{
+        fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+        fontSize: 10,
+        color: COLOR.ink3,
+        letterSpacing: '0.07em', textTransform: 'uppercase',
+        fontWeight: 600,
+        marginBottom: 8,
+      }}>
+        {label}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+const textareaStyle = {
+  width: '100%',
+  background: COLOR.paper,
+  border: `1px solid ${COLOR.rule}`,
+  borderRadius: 6,
+  padding: '10px 12px',
+  fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+  fontSize: 14,
+  color: COLOR.ink,
+  outline: 'none',
+  resize: 'vertical',
+  minHeight: 60,
 }
