@@ -7,6 +7,8 @@ import TaskRow from '../components/TaskRow';
 import SkeletonTaskRow from '../components/SkeletonTaskRow';
 import InlineError from '../components/InlineError';
 
+const SCHEDULE_WEBHOOK = 'https://n8n.meridiantechco.com/webhook/schedule-suggestions';
+
 const COLOR = {
   ink2: '#5C5448', ink3: '#948A78',
   paper: '#FAF6EC', rule: '#D9CFB8', rubric: '#8E3A1A',
@@ -31,6 +33,7 @@ export default function EverythingScreen() {
   const [blockedIds, setBlockedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scheduling, setScheduling] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -53,6 +56,17 @@ export default function EverythingScreen() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleScheduleMyWeek = useCallback(async () => {
+    setScheduling(true);
+    try {
+      await fetch(SCHEDULE_WEBHOOK, { method: 'POST' });
+    } catch (_) {
+      // silent — webhook may not be live yet (MTC-166 in backlog)
+    } finally {
+      setScheduling(false);
+    }
+  }, []);
 
   const handleComplete = useCallback((task) => {
     setTasks((ts) => ts.filter((t) => t.id !== task.id));
@@ -79,6 +93,27 @@ export default function EverythingScreen() {
         title="Everything"
         dropCap="E"
         count={total}
+        action={
+          <button
+            onClick={handleScheduleMyWeek}
+            disabled={scheduling}
+            style={{
+              background: 'none',
+              border: '0.5px solid #D9CFB8',
+              borderRadius: 15,
+              padding: '5px 12px',
+              fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+              fontSize: 10,
+              fontWeight: 600,
+              color: scheduling ? '#948A78' : '#5C5448',
+              letterSpacing: '0.04em',
+              cursor: scheduling ? 'default' : 'pointer',
+              textTransform: 'uppercase',
+            }}
+          >
+            {scheduling ? 'Scheduling…' : 'Schedule my week'}
+          </button>
+        }
       />
 
       <div style={{

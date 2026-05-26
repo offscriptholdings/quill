@@ -10,7 +10,10 @@ import AddTaskFAB from '../components/AddTaskFAB';
 import SkeletonTaskRow from '../components/SkeletonTaskRow';
 import InlineError from '../components/InlineError';
 import TripBanner from '../components/TripBanner';
+import SuggestionCard from '../components/SuggestionCard';
 import { useModal } from '../context/ModalContext';
+
+const SCHEDULE_WEBHOOK = 'https://n8n.meridiantechco.com/webhook/schedule-suggestions';
 
 const COLOR = {
   ink: '#1F1D18', ink2: '#5C5448', ink3: '#948A78',
@@ -50,6 +53,9 @@ export default function TodayTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [scheduling, setScheduling] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const { openTaskModal } = useModal();
   const navigate = useNavigate();
 
@@ -101,7 +107,55 @@ export default function TodayTab() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  const fetchSuggestions = useCallback(async () => {
+    setSuggestionsLoading(true);
+    try {
+      const { data, error } = await supabase.schema('quill')
+        .from('schedule_suggestions')
+        .select('*, tasks!task_id(id, title, domain)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setSuggestions(data ?? []);
+    } catch (e) {
+      console.error('Failed to fetch suggestions:', e);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+    fetchSuggestions();
+  }, [fetchAll, fetchSuggestions]);
+
+  const handleScheduleMyWeek = useCallback(async () => {
+    setScheduling(true);
+    try {
+      await fetch(SCHEDULE_WEBHOOK, { method: 'POST' });
+    } catch (_) {
+      // silent — webhook may not be live yet (MTC-166 in backlog)
+    } finally {
+      setScheduling(false);
+    }
+  }, []);
+
+  const handleConfirmAll = useCallback(async () => {
+    const pending = [...suggestions];
+    setSuggestions([]);
+    try {
+      await Promise.all(pending.flatMap((s) => [
+        supabase.schema('quill').from('tasks')
+          .update({ schedule_date: s.suggested_date }).eq('id', s.task_id),
+        supabase.schema('quill').from('schedule_suggestions')
+          .update({ status: 'confirmed' }).eq('id', s.id),
+      ]));
+      fetchAll();
+    } catch (e) {
+      console.error('Confirm all failed:', e);
+      setSuggestions(pending);
+    }
+  }, [suggestions, fetchAll]);
 
   const handleComplete = useCallback((task) => {
     setOpenTasks((ts) => ts.filter((t) => t.id !== task.id));
@@ -177,6 +231,27 @@ export default function TodayTab() {
         title="Today"
         dropCap="T"
         count={openTotal}
+        action={
+          <button
+            onClick={handleScheduleMyWeek}
+            disabled={scheduling}
+            style={{
+              background: 'none',
+              border: '0.5px solid #D9CFB8',
+              borderRadius: 15,
+              padding: '5px 12px',
+              fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+              fontSize: 10,
+              fontWeight: 600,
+              color: scheduling ? '#948A78' : '#5C5448',
+              letterSpacing: '0.04em',
+              cursor: scheduling ? 'default' : 'pointer',
+              textTransform: 'uppercase',
+            }}
+          >
+            {scheduling ? 'Scheduling…' : 'Schedule my week'}
+          </button>
+        }
       />
 
       <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px' }}>
@@ -203,6 +278,52 @@ export default function TodayTab() {
           );
         })}
       </div>
+
+      {suggestions.length > 0 && !loading && (
+        <div style={{ margin: '0 16px 12px' }}>
+          <div style={{
+            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+            fontSize: 10, fontWeight: 600, color: '#948A78',
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            marginBottom: 8,
+          }}>
+            Schedule suggestions · {suggestions.length}
+          </div>
+
+          {suggestions.filter((s) => s.tasks).map((s) => (
+            <SuggestionCard
+              key={s.id}
+              suggestion={s}
+              onConfirm={(confirmed) => {
+                setSuggestions((prev) => prev.filter((x) => x.id !== confirmed.id));
+                fetchAll();
+              }}
+              onReject={(rejected) => {
+                setSuggestions((prev) => prev.filter((x) => x.id !== rejected.id));
+              }}
+            />
+          ))}
+
+          <button
+            onClick={handleConfirmAll}
+            style={{
+              background: '#1F1D18',
+              color: '#FAF6EC',
+              border: 0,
+              borderRadius: 3,
+              padding: '9px 16px',
+              fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              width: '100%',
+              marginTop: 4,
+            }}
+          >
+            Confirm all ({suggestions.length})
+          </button>
+        </div>
+      )}
 
       {tallyVisible && (
         <div style={{
