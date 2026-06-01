@@ -42,6 +42,16 @@ export default function MenuTab() {
         >
           Logbook →
         </button>
+        <button
+          onClick={() => navigate('/menu/planning-notes')}
+          style={{
+            background: 'none', border: 0, padding: '4px 0', cursor: 'pointer',
+            fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+            fontSize: 14, color: '#1F1D18', display: 'block',
+          }}
+        >
+          Planning Notes →
+        </button>
       </div>
       <SectionHeader label="Inbox" />
       <div style={{ padding: '0 16px 24px' }}>

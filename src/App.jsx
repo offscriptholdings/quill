@@ -14,6 +14,7 @@ import EverythingScreen from './tabs/EverythingScreen';
 import DomainScreen from './tabs/DomainScreen';
 import TaskDetailScreen from './tabs/TaskDetailScreen';
 import CrucibleCaptureScreen from './tabs/CrucibleCaptureScreen';
+import PlanningNotesScreen from './tabs/PlanningNotesScreen';
 
 function formatDate(d) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/everything"       element={<EverythingScreen />} />
               <Route path="/menu/everything"  element={<Navigate to="/everything" replace />} />
               <Route path="/menu/logbook"     element={<LogbookTab />} />
+              <Route path="/menu/planning-notes" element={<PlanningNotesScreen />} />
               <Route path="/domain/:slug"   element={<DomainScreen />} />
               <Route path="/task/:id"       element={<TaskDetailScreen />} />
               <Route path="/inbox"          element={<CrucibleCaptureScreen />} />
