@@ -13,6 +13,7 @@ import TripBanner from '../components/TripBanner';
 import SuggestionCard from '../components/SuggestionCard';
 import { useModal } from '../context/ModalContext';
 import CalendarEventRow from '../components/CalendarEventRow';
+import BlockCreatorSheet from '../components/BlockCreatorSheet';
 
 const SCHEDULE_WEBHOOK = 'https://n8n.meridiantechco.com/webhook/schedule-suggestions';
 
@@ -56,6 +57,7 @@ export default function TodayTab() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [scheduling, setScheduling] = useState(false);
+  const [showBlockCreator, setShowBlockCreator] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const { openTaskModal } = useModal();
@@ -461,6 +463,26 @@ export default function TodayTab() {
 
       {filter === 'calendar' && (
         <div data-testid="calendar-view">
+          <button
+            data-testid="create-block-btn"
+            onClick={() => setShowBlockCreator(true)}
+            style={{
+              background: 'none',
+              border: '0.5px solid #D9CFB8',
+              borderRadius: 4,
+              padding: '5px 12px',
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: 10,
+              color: '#5C5448',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              marginBottom: 10,
+              marginLeft: 16,
+            }}
+          >
+            + Block
+          </button>
           <div data-testid="calendar-allday">
             <SectionHeader label="All day" count={allDayEvents.length} />
             {allDayEvents.length > 0 && (
@@ -507,6 +529,17 @@ export default function TodayTab() {
       )}
 
       <AddTaskFAB defaultValues={{ schedule_date: localTodayIso() }} onSaved={fetchAll} />
+
+      <BlockCreatorSheet
+        open={showBlockCreator}
+        onClose={() => setShowBlockCreator(false)}
+        onCreated={(event) => {
+          setCalendarEvents(prev =>
+            [...prev, event].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
+          );
+          setShowBlockCreator(false);
+        }}
+      />
     </div>
   );
 }
